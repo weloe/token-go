@@ -17,7 +17,7 @@ func TestHttpContext_IsValidContext(t *testing.T) {
 	}
 	request, err := http.NewRequest("GET", "https://baidu.com", strings.NewReader(""))
 	if err != nil {
-
+		t.Error(err)
 	}
 	tests := []struct {
 		name   string
@@ -126,7 +126,7 @@ func TestHttpReqStorage_Delete(t *testing.T) {
 			r := HttpReqStorage{
 				source: tt.fields.source,
 			}
-			r.Delete(tt.args.key)
+			r.Delete(ctx.StorageKey(tt.args.key))
 		})
 	}
 }
@@ -151,7 +151,7 @@ func TestHttpReqStorage_Get(t *testing.T) {
 			r := HttpReqStorage{
 				source: tt.fields.source,
 			}
-			if got := r.Get(tt.args.key); !reflect.DeepEqual(got, tt.want) {
+			if got := r.Get(ctx.StorageKey(tt.args.key)); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Get() = %v, want %v", got, tt.want)
 			}
 		})
@@ -178,7 +178,7 @@ func TestHttpReqStorage_Set(t *testing.T) {
 			r := HttpReqStorage{
 				source: tt.fields.source,
 			}
-			r.Set(tt.args.key, tt.args.value)
+			r.Set(ctx.StorageKey(tt.args.key), tt.args.value)
 		})
 	}
 }
