@@ -2,23 +2,23 @@ package go_http_context
 
 import (
 	"encoding/json"
+	"github.com/weloe/token-go/constant"
 	"github.com/weloe/token-go/ctx"
 	"net/http"
+	"time"
 )
 
 var _ ctx.Response = (*HttpResponse)(nil)
 
 type HttpResponse struct {
-	*ctx.DefaultRespImplement
 	req    *http.Request
 	writer http.ResponseWriter
 }
 
 func NewResponse(req *http.Request, writer http.ResponseWriter) *HttpResponse {
 	return &HttpResponse{
-		DefaultRespImplement: &ctx.DefaultRespImplement{},
-		req:                  req,
-		writer:               writer,
+		req:    req,
+		writer: writer,
 	}
 }
 
@@ -40,6 +40,32 @@ func (r *HttpResponse) Redirect(url string) {
 
 func (r *HttpResponse) Status(status int) {
 	r.writer.WriteHeader(status)
+}
+
+func (r *HttpResponse) DeleteCookie(name string, path string, domain string) {
+	cookie := http.Cookie{
+		Name:   name,
+		Value:  "",
+		Path:   path,
+		Domain: domain,
+		MaxAge: -1,
+	}
+	r.AddHeader(constant.SetCookie, cookie.String())
+}
+
+func (r *HttpResponse) AddCookie(name string, value string, path string, domain string, timeout int64) {
+	cookie := http.Cookie{
+		Name:    name,
+		Value:   value,
+		Path:    path,
+		Domain:  domain,
+		Expires: time.Now().Add(time.Second * time.Duration(timeout)),
+	}
+	r.AddHeader(constant.SetCookie, cookie.String())
+}
+
+func (r *HttpResponse) SetServer(value string) {
+	r.SetHeader("Server", value)
 }
 
 // JSON response json data

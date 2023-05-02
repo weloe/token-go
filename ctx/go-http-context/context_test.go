@@ -1,13 +1,56 @@
 package go_http_context
 
 import (
-	"context"
+	"encoding/json"
+	"fmt"
 	"github.com/weloe/token-go/ctx"
 	"net/http"
-	"reflect"
+	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
+	"time"
 )
+
+func NewTestRequest(t *testing.T) *http.Request {
+	req, err := http.NewRequest("GET", "https://baidu.com/api/", strings.NewReader(""))
+	// cookie
+	cookie := &http.Cookie{Name: "myCookie", Value: "cookieValue"}
+	req.AddCookie(cookie)
+
+	// header
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("User-Agent", "My Custom User Agent")
+
+	// POST form
+	form := url.Values{}
+	form.Add("key1", "value1")
+	form.Add("key2", "value2")
+	req.PostForm = form
+
+	// add query
+	q := req.URL.Query()
+	q.Add("query1", "value1")
+	q.Add("query2", "value2")
+	req.URL.RawQuery = q.Encode()
+	if err != nil {
+		t.Errorf("new request error: %v", err)
+	}
+	return req
+}
+
+func NewTestHttpRequest(t *testing.T) *HttpRequest {
+	request := NewTestRequest(t)
+
+	httpRequest := NewHttpRequest(request)
+	return httpRequest
+}
+
+func NewTestHttpReqStore(t *testing.T) *HttpReqStorage {
+	request := NewTestRequest(t)
+	httpReqStorage := NewReqStorage(request)
+	return httpReqStorage
+}
 
 func TestHttpContext_IsValidContext(t *testing.T) {
 	type fields struct {
@@ -15,10 +58,8 @@ func TestHttpContext_IsValidContext(t *testing.T) {
 		response   ctx.Response
 		reqStorage ctx.ReqStorage
 	}
-	request, err := http.NewRequest("GET", "https://baidu.com", strings.NewReader(""))
-	if err != nil {
-		t.Error(err)
-	}
+	request := NewTestRequest(t)
+
 	tests := []struct {
 		name   string
 		fields fields
@@ -108,540 +149,295 @@ func TestHttpContext_MatchPath(t *testing.T) {
 }
 
 func TestHttpReqStorage_Delete(t *testing.T) {
-	type fields struct {
-		source context.Context
-	}
-	type args struct {
-		key string
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		args   args
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			r := HttpReqStorage{
-				source: tt.fields.source,
-			}
-			r.Delete(ctx.StorageKey(tt.args.key))
-		})
+	httpReqStorage := NewTestHttpReqStore(t)
+	httpReqStorage.Set("s", "k")
+	httpReqStorage.Delete("s")
+	get := httpReqStorage.Get("s")
+
+	if get != nil {
+		t.Errorf("Delete error")
 	}
 }
 
 func TestHttpReqStorage_Get(t *testing.T) {
-	type fields struct {
-		source context.Context
-	}
-	type args struct {
-		key string
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		args   args
-		want   interface{}
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			r := HttpReqStorage{
-				source: tt.fields.source,
-			}
-			if got := r.Get(ctx.StorageKey(tt.args.key)); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Get() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestHttpReqStorage_Set(t *testing.T) {
-	type fields struct {
-		source context.Context
-	}
-	type args struct {
-		key   string
-		value string
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		args   args
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			r := HttpReqStorage{
-				source: tt.fields.source,
-			}
-			r.Set(ctx.StorageKey(tt.args.key), tt.args.value)
-		})
+	httpReqStorage := NewTestHttpReqStore(t)
+	httpReqStorage.Set("s", "k")
+	k := fmt.Sprintf("%v", httpReqStorage.Get("s"))
+	if k != "k" {
+		t.Errorf("get method error,Get() = %s want 'k'", k)
 	}
 }
 
 func TestHttpRequest_Cookie(t *testing.T) {
-	type fields struct {
-		source *http.Request
+	request := NewTestHttpRequest(t)
+	cookie := request.Cookie("err")
+	if cookie != "" {
+		t.Errorf("Cookie() = %v,want ' '", cookie)
 	}
-	type args struct {
-		key string
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		args   args
-		want   string
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			d := &HttpRequest{
-				source: tt.fields.source,
-			}
-			if got := d.Cookie(tt.args.key); got != tt.want {
-				t.Errorf("Cookie() = %v, want %v", got, tt.want)
-			}
-		})
+	cookie = request.Cookie("myCookie")
+	if cookie != "cookieValue" {
+		t.Errorf("Cookie() = %v,want cookieValue", cookie)
 	}
 }
 
 func TestHttpRequest_Header(t *testing.T) {
-	type fields struct {
-		source *http.Request
+	request := NewTestHttpRequest(t)
+	hV := request.Header("err")
+	if hV != "" {
+		t.Errorf("Header() = %v,want ' '", hV)
 	}
-	type args struct {
-		key string
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		args   args
-		want   string
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			d := &HttpRequest{
-				source: tt.fields.source,
-			}
-			if got := d.Header(tt.args.key); got != tt.want {
-				t.Errorf("Header() = %v, want %v", got, tt.want)
-			}
-		})
+	hV = request.Header("Content-Type")
+	if hV != "application/x-www-form-urlencoded" {
+		t.Errorf("Header() = %v,want application/x-www-form-urlencoded", hV)
 	}
 }
 
 func TestHttpRequest_Method(t *testing.T) {
-	type fields struct {
-		source *http.Request
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		want   string
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			d := &HttpRequest{
-				source: tt.fields.source,
-			}
-			if got := d.Method(); got != tt.want {
-				t.Errorf("Method() = %v, want %v", got, tt.want)
-			}
-		})
+	request := NewTestHttpRequest(t)
+	if request.Method() != "GET" {
+		t.Errorf("Method() = %s,want GET", request.Method())
 	}
 }
 
 func TestHttpRequest_Path(t *testing.T) {
-	type fields struct {
-		source *http.Request
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		want   string
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			d := &HttpRequest{
-				source: tt.fields.source,
-			}
-			if got := d.Path(); got != tt.want {
-				t.Errorf("Path() = %v, want %v", got, tt.want)
-			}
-		})
+	request := NewTestHttpRequest(t)
+	t.Log(request.Path())
+	if request.Path() != "/api/" {
+		t.Errorf("Path() = %s  want /api/", request.Path())
 	}
 }
 
 func TestHttpRequest_PostForm(t *testing.T) {
-	type fields struct {
-		source *http.Request
+	request := NewTestHttpRequest(t)
+	if request.PostForm("key") != "" {
+		t.Errorf("PostForm() = %s want ' '", request.PostForm("key"))
 	}
-	type args struct {
-		key string
+
+	if request.PostForm("key1") != "value1" {
+		t.Errorf("PostForm() = %s want ' '", request.PostForm("key1"))
 	}
-	tests := []struct {
-		name   string
-		fields fields
-		args   args
-		want   string
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			d := &HttpRequest{
-				source: tt.fields.source,
-			}
-			if got := d.PostForm(tt.args.key); got != tt.want {
-				t.Errorf("PostForm() = %v, want %v", got, tt.want)
-			}
-		})
+
+	if request.PostForm("key2") != "value2" {
+		t.Errorf("PostForm() = %s want ' '", request.PostForm("key2"))
 	}
 }
 
 func TestHttpRequest_Query(t *testing.T) {
-	type fields struct {
-		source *http.Request
+	request := NewTestHttpRequest(t)
+	if request.Query("key") != "" {
+		t.Errorf("Query() = %s want ' '", request.Query("key"))
 	}
-	type args struct {
-		key string
+
+	if request.Query("query1") != "value1" {
+		t.Errorf("Query() = %s want ' '", request.Query("query1"))
 	}
-	tests := []struct {
-		name   string
-		fields fields
-		args   args
-		want   string
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			d := &HttpRequest{
-				source: tt.fields.source,
-			}
-			if got := d.Query(tt.args.key); got != tt.want {
-				t.Errorf("Query() = %v, want %v", got, tt.want)
-			}
-		})
+
+	if request.Query("query2") != "value2" {
+		t.Errorf("Query() = %s want ' '", request.Query("query2"))
 	}
 }
 
 func TestHttpRequest_Source(t *testing.T) {
-	type fields struct {
-		source *http.Request
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		want   interface{}
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			d := &HttpRequest{
-				source: tt.fields.source,
-			}
-			if got := d.Source(); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Source() = %v, want %v", got, tt.want)
-			}
-		})
-	}
+	request := NewTestHttpRequest(t)
+	t.Log(request.Source())
 }
 
 func TestHttpRequest_Url(t *testing.T) {
-	type fields struct {
-		source *http.Request
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		want   string
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			d := &HttpRequest{
-				source: tt.fields.source,
-			}
-			if got := d.Url(); got != tt.want {
-				t.Errorf("Url() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestHttpResponse_AddHeader(t *testing.T) {
-	type fields struct {
-		DefaultRespImplement *ctx.DefaultRespImplement
-		req                  *http.Request
-		writer               http.ResponseWriter
-	}
-	type args struct {
-		name  string
-		value string
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		args   args
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			r := &HttpResponse{
-				DefaultRespImplement: tt.fields.DefaultRespImplement,
-				req:                  tt.fields.req,
-				writer:               tt.fields.writer,
-			}
-			r.AddHeader(tt.args.name, tt.args.value)
-		})
-	}
-}
-
-func TestHttpResponse_HTML(t *testing.T) {
-	type fields struct {
-		DefaultRespImplement *ctx.DefaultRespImplement
-		req                  *http.Request
-		writer               http.ResponseWriter
-	}
-	type args struct {
-		code int
-		html string
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr bool
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			r := &HttpResponse{
-				DefaultRespImplement: tt.fields.DefaultRespImplement,
-				req:                  tt.fields.req,
-				writer:               tt.fields.writer,
-			}
-			if err := r.HTML(tt.args.code, tt.args.html); (err != nil) != tt.wantErr {
-				t.Errorf("HTML() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
-	}
-}
-
-func TestHttpResponse_JSON(t *testing.T) {
-	type fields struct {
-		DefaultRespImplement *ctx.DefaultRespImplement
-		req                  *http.Request
-		writer               http.ResponseWriter
-	}
-	type args struct {
-		code int
-		obj  interface{}
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		args   args
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			r := &HttpResponse{
-				DefaultRespImplement: tt.fields.DefaultRespImplement,
-				req:                  tt.fields.req,
-				writer:               tt.fields.writer,
-			}
-			r.JSON(tt.args.code, tt.args.obj)
-		})
-	}
-}
-
-func TestHttpResponse_Redirect(t *testing.T) {
-	type fields struct {
-		DefaultRespImplement *ctx.DefaultRespImplement
-		req                  *http.Request
-		writer               http.ResponseWriter
-	}
-	type args struct {
-		url string
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		args   args
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			r := &HttpResponse{
-				DefaultRespImplement: tt.fields.DefaultRespImplement,
-				req:                  tt.fields.req,
-				writer:               tt.fields.writer,
-			}
-			r.Redirect(tt.args.url)
-		})
+	s := NewTestHttpRequest(t).Url()
+	if s != "https://baidu.com/api/?query1=value1&query2=value2" {
+		t.Errorf("Url() = %s ,want https://baidu.com/api/?query1=value1&query2=value2", s)
 	}
 }
 
 func TestHttpResponse_SetHeader(t *testing.T) {
-	type fields struct {
-		DefaultRespImplement *ctx.DefaultRespImplement
-		req                  *http.Request
-		writer               http.ResponseWriter
-	}
-	type args struct {
-		name  string
-		value string
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		args   args
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			r := &HttpResponse{
-				DefaultRespImplement: tt.fields.DefaultRespImplement,
-				req:                  tt.fields.req,
-				writer:               tt.fields.writer,
-			}
-			r.SetHeader(tt.args.name, tt.args.value)
-		})
+	req, _ := http.NewRequest(http.MethodGet, "/", nil)
+	w := httptest.NewRecorder()
+
+	resp := NewResponse(req, w)
+	resp.SetHeader("Content-Type", "application/json")
+
+	if ct := w.Header().Get("Content-Type"); ct != "application/json" {
+		t.Errorf("SetHeader() failed: expected Content-Type header to be 'application/json', got '%s'", ct)
 	}
 }
 
-func TestHttpResponse_Source(t *testing.T) {
-	type fields struct {
-		DefaultRespImplement *ctx.DefaultRespImplement
-		req                  *http.Request
-		writer               http.ResponseWriter
+func TestHttpResponse_AddHeader(t *testing.T) {
+	req, _ := http.NewRequest(http.MethodGet, "/", nil)
+	w := httptest.NewRecorder()
+
+	resp := NewResponse(req, w)
+	resp.AddHeader("Content-Type", "application/json")
+	resp.AddHeader("Cache-Control", "no-cache")
+
+	if ct := w.Header().Get("Content-Type"); ct != "application/json" {
+		t.Errorf("AddHeader() failed: expected Content-Type header to be 'application/json', got '%s'", ct)
 	}
-	tests := []struct {
-		name   string
-		fields fields
-		want   interface{}
-	}{
-		// TODO: Add test cases.
+	if cc := w.Header().Get("Cache-Control"); cc != "no-cache" {
+		t.Errorf("AddHeader() failed: expected Cache-Control header to be 'no-cache', got '%s'", cc)
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			r := &HttpResponse{
-				DefaultRespImplement: tt.fields.DefaultRespImplement,
-				req:                  tt.fields.req,
-				writer:               tt.fields.writer,
-			}
-			if got := r.Source(); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Source() = %v, want %v", got, tt.want)
-			}
-		})
+}
+
+func TestHttpResponse_Redirect(t *testing.T) {
+	req, _ := http.NewRequest(http.MethodGet, "/", nil)
+	w := httptest.NewRecorder()
+
+	resp := NewResponse(req, w)
+	resp.Redirect("/new-page")
+
+	if w.Code != http.StatusTemporaryRedirect {
+		t.Errorf("Redirect() failed: expected status code %d, got %d", http.StatusTemporaryRedirect, w.Code)
+	}
+	if loc := w.Header().Get("Location"); loc != "/new-page" {
+		t.Errorf("Redirect() failed: expected Location header to be '/new-page', got '%s'", loc)
 	}
 }
 
 func TestHttpResponse_Status(t *testing.T) {
-	type fields struct {
-		DefaultRespImplement *ctx.DefaultRespImplement
-		req                  *http.Request
-		writer               http.ResponseWriter
-	}
-	type args struct {
-		status int
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		args   args
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			r := &HttpResponse{
-				DefaultRespImplement: tt.fields.DefaultRespImplement,
-				req:                  tt.fields.req,
-				writer:               tt.fields.writer,
-			}
-			r.Status(tt.args.status)
-		})
+	req, _ := http.NewRequest(http.MethodGet, "/", nil)
+	w := httptest.NewRecorder()
+
+	resp := NewResponse(req, w)
+	resp.Status(http.StatusOK)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("Status() failed: expected status code %d, got %d", http.StatusOK, w.Code)
 	}
 }
 
-func TestNewHttpRequest(t *testing.T) {
-	type args struct {
-		r *http.Request
+func TestHttpResponse_JSON(t *testing.T) {
+	req, _ := http.NewRequest(http.MethodGet, "/", nil)
+	w := httptest.NewRecorder()
+
+	resp := NewResponse(req, w)
+
+	type Person struct {
+		Name string `json:"name"`
+		Age  int    `json:"age"`
 	}
-	tests := []struct {
-		name string
-		args args
-		want *HttpRequest
-	}{
-		// TODO: Add test cases.
+
+	person := &Person{Name: "John Doe", Age: 30}
+	resp.JSON(http.StatusOK, person)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("JSON() failed: expected status code %d, got %d", http.StatusOK, w.Code)
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := NewHttpRequest(tt.args.r); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("NewHttpRequest() = %v, want %v", got, tt.want)
-			}
-		})
+	if ct := w.Header().Get("Content-Type"); ct != "application/json" {
+		t.Errorf("JSON() failed: expected Content-Type header to be 'application/json', got '%s'", ct)
+	}
+
+	var p Person
+	decoder := json.NewDecoder(w.Body)
+	err := decoder.Decode(&p)
+	if err != nil {
+		t.Fatalf("Error decoding response body: %s", err)
+	}
+	if p.Name != "John Doe" {
+		t.Errorf("JSON() failed: expected person name to be 'John Doe', got '%s'", p.Name)
+	}
+	if p.Age != 30 {
+		t.Errorf("JSON() failed: expected person age to be '30', got '%d'", p.Age)
 	}
 }
 
-func TestNewReqStorage(t *testing.T) {
-	type args struct {
-		req *http.Request
+func TestHttpResponse_HTML(t *testing.T) {
+	req, _ := http.NewRequest(http.MethodGet, "/", nil)
+	w := httptest.NewRecorder()
+
+	resp := NewResponse(req, w)
+
+	htmlCode := "<html><body><h1>Hello World!</h1></body></html>"
+	err := resp.HTML(http.StatusOK, htmlCode)
+	if err != nil {
+		t.Fatalf("Error writing HTML code to response: %s", err)
 	}
-	tests := []struct {
-		name string
-		args args
-		want *HttpReqStorage
-	}{
-		// TODO: Add test cases.
+
+	if w.Code != http.StatusOK {
+		t.Errorf("HTML() failed: expected status code %d, got %d", http.StatusOK, w.Code)
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := NewReqStorage(tt.args.req); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("NewReqStorage() = %v, want %v", got, tt.want)
-			}
-		})
+	if ct := w.Header().Get("Content-Type"); ct != "text/html" {
+		t.Errorf("HTML() failed: expected Content-Type header to be 'text/html', got '%s'", ct)
+	}
+	if hc := w.Body.String(); hc != htmlCode {
+		t.Errorf("HTML() failed: expected HTML code to be '%s'", hc)
 	}
 }
 
-func TestNewResponse(t *testing.T) {
-	type args struct {
-		req    *http.Request
-		writer http.ResponseWriter
+func TestSetCookieHandler(t *testing.T) {
+	// Create a new request that simulates a call to the /setcookie endpoint
+	req, err := http.NewRequest("GET", "/setcookie", nil)
+	if err != nil {
+		t.Fatalf("Failed to create request: %v", err)
 	}
-	tests := []struct {
-		name string
-		args args
-		want *HttpResponse
-	}{
-		// TODO: Add test cases.
+	rr := httptest.NewRecorder()
+
+	// Call SetCookieHandler to set a new cookie
+	// Create a new cookie
+	cookie := &http.Cookie{
+		Name:    "my_cookie",
+		Value:   "1234567890",
+		Expires: time.Now().Add(24 * time.Hour),
+		Path:    "/",
+		Domain:  "localhost",
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := NewResponse(tt.args.req, tt.args.writer); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("NewResponse() = %v, want %v", got, tt.want)
-			}
-		})
+	NewResponse(req, rr).AddCookie(cookie.Name, cookie.Value, cookie.Path, cookie.Domain, 2)
+
+	// Check the response status code
+	if status := rr.Code; status != http.StatusOK {
+		t.Errorf("handler returned wrong status code: got %v want %v",
+			status, http.StatusOK)
 	}
+
+	// Check that the cookie was set correctly
+	cookies := rr.Header().Values("Set-Cookie")
+	if len(cookies) != 1 {
+		t.Errorf("handler returned wrong number of Set-Cookie headers: got %v want %v",
+			len(cookies), 1)
+	}
+	if got, want := cookies[0], "my_cookie=1234567890; Path=/; Domain=localhost; Expires="; !containsString(got, want) {
+		t.Errorf("handler returned unexpected Set-Cookie header: got %v want %v",
+			got, want)
+	}
+}
+
+func TestDeleteCookieHandler(t *testing.T) {
+	// Create a new request that simulates a call to the /deletecookie endpoint
+	req, err := http.NewRequest("GET", "/deletecookie", nil)
+	if err != nil {
+		t.Fatalf("Failed to create request: %v", err)
+	}
+	rr := httptest.NewRecorder()
+
+	// Call DeleteCookieHandler to delete an existing cookie
+	// Create a new cookie with the same name and domain as the cookie to be deleted
+	cookie := &http.Cookie{
+		Name:   "my_cookie",
+		Value:  "",
+		Path:   "/",
+		Domain: "localhost",
+		MaxAge: -1,
+	}
+
+	// Set the cookie in the response header with MaxAge = -1 to delete it
+	NewResponse(req, rr).DeleteCookie(cookie.Name, cookie.Path, cookie.Domain)
+
+	// Check the response status code
+	if status := rr.Code; status != http.StatusOK {
+		t.Errorf("handler returned wrong status code: got %v want %v",
+			status, http.StatusOK)
+	}
+
+	// Check that the cookie was deleted correctly
+	cookies := rr.Header().Values("Set-Cookie")
+	if len(cookies) != 1 {
+		t.Errorf("handler returned wrong number of Set-Cookie headers: got %v want %v",
+			len(cookies), 1)
+	}
+	if got, want := cookies[0], "my_cookie=; Path=/; Domain=localhost; Max-Age=0"; !containsString(got, want) {
+		t.Errorf("handler returned unexpected Set-Cookie header: got %v want %v",
+			got, want)
+	}
+}
+
+func containsString(s string, substr string) bool {
+	return len(s) >= len(substr) && s[:len(substr)] == substr
 }
