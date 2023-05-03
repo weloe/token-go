@@ -3,26 +3,26 @@ package config
 import "reflect"
 
 type ConfigInterface interface {
-	LoadTokenConfig(conf string) (*tokenConfig, error)
+	loadTokenConfig(conf string) (*TokenConfig, error)
 }
 
 var _ ConfigInterface = (*FileConfig)(nil)
 
 type FileConfig struct {
-	TokenConfig *tokenConfig
+	TokenConfig *TokenConfig
 }
 
-func (c *FileConfig) LoadTokenConfig(conf string) (*tokenConfig, error) {
+func (c *FileConfig) loadTokenConfig(conf string) (*TokenConfig, error) {
 	//TODO implement me
-	return &tokenConfig{}, nil
+	return &TokenConfig{}, nil
 }
 
 func (c *FileConfig) parse(confName string) (err error) {
-	c.TokenConfig, err = c.LoadTokenConfig(confName)
+	c.TokenConfig, err = c.loadTokenConfig(confName)
 	if err != nil {
 		return err
 	}
-	if reflect.DeepEqual(c.TokenConfig, &tokenConfig{}) {
+	if reflect.DeepEqual(c.TokenConfig, &TokenConfig{}) {
 		c.TokenConfig = DefaultTokenConfig()
 	}
 

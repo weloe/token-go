@@ -1,6 +1,6 @@
 package config
 
-type tokenConfig struct {
+type TokenConfig struct {
 	// TokenName prefix
 	TokenStyle  string
 	TokenPrefix string
@@ -42,8 +42,8 @@ type tokenConfig struct {
 	CookieConfig *cookieConfig
 }
 
-func DefaultTokenConfig() *tokenConfig {
-	return &tokenConfig{
+func DefaultTokenConfig() *TokenConfig {
+	return &TokenConfig{
 		TokenStyle:             "uuid",
 		TokenPrefix:            "",
 		TokenName:              "tokenGo",
