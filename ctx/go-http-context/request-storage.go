@@ -11,6 +11,9 @@ type HttpReqStorage struct {
 }
 
 func NewReqStorage(req *http.Request) *HttpReqStorage {
+	if req == nil {
+		return nil
+	}
 	return &HttpReqStorage{source: req.Context()}
 }
 

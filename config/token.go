@@ -1,12 +1,15 @@
 package config
 
+import "github.com/weloe/token-go/constant"
+
 type TokenConfig struct {
 	// TokenName prefix
 	TokenStyle  string
 	TokenPrefix string
 	TokenName   string
 
-	Timeout         int64
+	Timeout int64
+	// If last operate time < ActivityTimeout, token expired
 	ActivityTimeout int64
 	// Data clean period
 	DataRefreshPeriod int64
@@ -17,6 +20,7 @@ type TokenConfig struct {
 	IsConcurrent bool
 	IsShare      bool
 	// If (IsConcurrent == true && IsShare == false), support MaxLoginCount
+	// If IsConcurrent == -1, do not need to check loginCount
 	MaxLoginCount int16
 
 	// Read token method
@@ -46,7 +50,7 @@ func DefaultTokenConfig() *TokenConfig {
 	return &TokenConfig{
 		TokenStyle:             "uuid",
 		TokenPrefix:            "",
-		TokenName:              "tokenGo",
+		TokenName:              constant.TokenName,
 		Timeout:                60 * 60 * 24 * 30,
 		ActivityTimeout:        -1,
 		DataRefreshPeriod:      30,

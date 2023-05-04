@@ -48,7 +48,11 @@ func NewTestHttpRequest(t *testing.T) *HttpRequest {
 
 func NewTestHttpReqStore(t *testing.T) *HttpReqStorage {
 	request := NewTestRequest(t)
-	httpReqStorage := NewReqStorage(request)
+	httpReqStorage := NewReqStorage(nil)
+	if httpReqStorage != nil {
+		t.Errorf("NewReqStorage() failed: value = %v", httpReqStorage)
+	}
+	httpReqStorage = NewReqStorage(request)
 	return httpReqStorage
 }
 
@@ -440,4 +444,17 @@ func TestDeleteCookieHandler(t *testing.T) {
 
 func containsString(s string, substr string) bool {
 	return len(s) >= len(substr) && s[:len(substr)] == substr
+}
+
+func TestNewHttpContext(t *testing.T) {
+	context := NewHttpContext(nil, nil)
+	if context == nil {
+		t.Errorf("NewHttpContext() failed: value = %v", context)
+	}
+	request := context.Request()
+	response := context.Response()
+	storage := context.ReqStorage()
+	if request == nil || response == nil || storage == nil {
+		t.Errorf("HttpContext failed ")
+	}
 }

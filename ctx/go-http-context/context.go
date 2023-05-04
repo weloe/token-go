@@ -2,6 +2,7 @@ package go_http_context
 
 import (
 	"github.com/weloe/token-go/ctx"
+	"net/http"
 	"reflect"
 )
 
@@ -11,6 +12,14 @@ type HttpContext struct {
 	req        ctx.Request
 	response   ctx.Response
 	reqStorage ctx.ReqStorage
+}
+
+func NewHttpContext(req *http.Request, writer http.ResponseWriter) *HttpContext {
+	return &HttpContext{
+		req:        NewHttpRequest(req),
+		response:   NewResponse(req, writer),
+		reqStorage: NewReqStorage(req),
+	}
 }
 
 func (h *HttpContext) IsValidContext() bool {
