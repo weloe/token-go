@@ -16,9 +16,11 @@ const (
 )
 
 const (
-	TokenName = "tokenGo"
+	TokenName = "TokenGo"
 )
 
 const (
 	BeReplaced int = -4
+	BeKicked   int = -5
+	BeBanned   int = -6
 )
