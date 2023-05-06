@@ -3,6 +3,7 @@ package token_go
 import (
 	"errors"
 	"github.com/weloe/token-go/constant"
+	"github.com/weloe/token-go/ctx"
 	"github.com/weloe/token-go/model"
 	"strconv"
 )
@@ -47,8 +48,10 @@ func (e *Enforcer) createLoginToken(id string, loginModel *model.Login) (string,
 }
 
 // responseToken set token to cookie or header
-func (e *Enforcer) responseToken(tokenValue string, loginModel *model.Login) error {
-
+func (e *Enforcer) responseToken(tokenValue string, loginModel *model.Login, ctx ctx.Context) error {
+	if ctx == nil {
+		return nil
+	}
 	tokenConfig := e.config
 
 	// set token to cookie
@@ -58,7 +61,7 @@ func (e *Enforcer) responseToken(tokenValue string, loginModel *model.Login) err
 			cookieTimeout = -1
 		}
 		// add cookie use tokenConfig.CookieConfig
-		e.webCtx.Response().AddCookie(tokenConfig.TokenName,
+		ctx.Response().AddCookie(tokenConfig.TokenName,
 			tokenValue,
 			tokenConfig.CookieConfig.Path,
 			tokenConfig.CookieConfig.Domain,
@@ -67,7 +70,7 @@ func (e *Enforcer) responseToken(tokenValue string, loginModel *model.Login) err
 
 	// set token to header
 	if loginModel.IsWriteHeader {
-		e.webCtx.Response().SetHeader(tokenConfig.TokenName, tokenValue)
+		ctx.Response().SetHeader(tokenConfig.TokenName, tokenValue)
 	}
 
 	return nil

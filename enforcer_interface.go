@@ -10,23 +10,22 @@ import (
 var _ IEnforcer = &Enforcer{}
 
 type IEnforcer interface {
-	Login(id string) (string, error)
-	LoginByModel(id string, loginModel *model.Login) (string, error)
-	Logout() error
-	IsLogin() (bool, error)
+	Login(id string, ctx ctx.Context) (string, error)
+	LoginByModel(id string, loginModel *model.Login, ctx ctx.Context) (string, error)
+	Logout(ctx ctx.Context) error
+	IsLogin(ctx ctx.Context) (bool, error)
 	IsLoginById(id string) (bool, error)
-	GetLoginId() (string, error)
+	GetLoginId(ctx ctx.Context) (string, error)
 
 	Replaced(id string, device string) error
 	// Banned TODO
 	Banned(id string, service string) error
 	Kickout(id string, device string) error
 
-	GetRequestToken() string
+	GetRequestToken(ctx ctx.Context) string
 
 	SetType(t string)
 	GetType() string
-	SetContext(ctx ctx.Context)
 	GetAdapter() persist.Adapter
 	SetAdapter(adapter persist.Adapter)
 	SetWatcher(watcher persist.Watcher)

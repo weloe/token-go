@@ -20,11 +20,10 @@ type Enforcer struct {
 	generateFunc model.GenerateTokenFunc
 	adapter      persist.Adapter
 	watcher      persist.Watcher
-	webCtx       ctx.Context
 	logger       log.Logger
 }
 
-func NewEnforcer(tokenConfig *config.TokenConfig, adapter persist.Adapter, ctx ctx.Context) (*Enforcer, error) {
+func NewEnforcer(tokenConfig *config.TokenConfig, adapter persist.Adapter) (*Enforcer, error) {
 	fm := model.LoadFunctionMap()
 	if tokenConfig == nil || adapter == nil {
 		return nil, errors.New("NewEnforcer() params should be not nil")
@@ -34,7 +33,6 @@ func NewEnforcer(tokenConfig *config.TokenConfig, adapter persist.Adapter, ctx c
 		config:       *tokenConfig,
 		generateFunc: fm,
 		adapter:      adapter,
-		webCtx:       ctx,
 		logger:       &log.DefaultLogger{},
 	}, nil
 }
@@ -47,7 +45,7 @@ func NewHttpContext(req *http.Request, writer http.ResponseWriter) ctx.Context {
 	return httpCtx.NewHttpContext(req, writer)
 }
 
-func NewDefaultEnforcer(adapter persist.Adapter, ctx ctx.Context) (*Enforcer, error) {
+func NewDefaultEnforcer(adapter persist.Adapter) (*Enforcer, error) {
 	fm := model.LoadFunctionMap()
 	if adapter == nil {
 		return nil, errors.New("NewDefaultEnforcer() params should be not nil")
@@ -57,12 +55,11 @@ func NewDefaultEnforcer(adapter persist.Adapter, ctx ctx.Context) (*Enforcer, er
 		config:       *config.DefaultTokenConfig(),
 		generateFunc: fm,
 		adapter:      adapter,
-		webCtx:       ctx,
 		logger:       &log.DefaultLogger{},
 	}, nil
 }
 
-func NewEnforcerByFile(conf string, adapter persist.Adapter, ctx ctx.Context) (*Enforcer, error) {
+func NewEnforcerByFile(conf string, adapter persist.Adapter) (*Enforcer, error) {
 	if conf == "" || adapter == nil {
 		return nil, errors.New("NewEnforcerByFile() params should be not nil")
 	}
@@ -78,13 +75,8 @@ func NewEnforcerByFile(conf string, adapter persist.Adapter, ctx ctx.Context) (*
 		config:       *(newConfig.(*config.FileConfig).TokenConfig),
 		generateFunc: fm,
 		adapter:      adapter,
-		webCtx:       ctx,
 		logger:       &log.DefaultLogger{},
 	}, nil
-}
-
-func (e *Enforcer) SetContext(context ctx.Context) {
-	e.webCtx = context
 }
 
 func (e *Enforcer) SetType(t string) {
@@ -120,12 +112,12 @@ func (e *Enforcer) IsLogEnable() bool {
 }
 
 // Login login by id and default loginModel, return tokenValue and error
-func (e *Enforcer) Login(id string) (string, error) {
-	return e.LoginByModel(id, model.DefaultLoginModel())
+func (e *Enforcer) Login(id string, ctx ctx.Context) (string, error) {
+	return e.LoginByModel(id, model.DefaultLoginModel(), ctx)
 }
 
 // LoginByModel login by id and loginModel, return tokenValue and error
-func (e *Enforcer) LoginByModel(id string, loginModel *model.Login) (string, error) {
+func (e *Enforcer) LoginByModel(id string, loginModel *model.Login, ctx ctx.Context) (string, error) {
 	var err error
 	var session *model.Session
 	var tokenValue string
@@ -167,7 +159,7 @@ func (e *Enforcer) LoginByModel(id string, loginModel *model.Login) (string, err
 	}
 
 	// response token
-	err = e.responseToken(tokenValue, loginModel)
+	err = e.responseToken(tokenValue, loginModel, ctx)
 	if err != nil {
 		return "", err
 	}
@@ -251,15 +243,15 @@ func (e *Enforcer) Replaced(id string, device string) error {
 }
 
 // Logout user logout
-func (e *Enforcer) Logout() error {
+func (e *Enforcer) Logout(ctx ctx.Context) error {
 	tokenConfig := e.config
 
-	token := e.GetRequestToken()
+	token := e.GetRequestToken(ctx)
 	if token == "" {
 		return errors.New("logout() failed: token doesn't exist")
 	}
 	if e.config.IsReadCookie {
-		e.webCtx.Response().DeleteCookie(tokenConfig.TokenName,
+		ctx.Response().DeleteCookie(tokenConfig.TokenName,
 			tokenConfig.CookieConfig.Path,
 			tokenConfig.CookieConfig.Domain)
 	}
@@ -301,8 +293,8 @@ func (e *Enforcer) IsLoginById(id string) (bool, error) {
 }
 
 // IsLogin check if user logged in by token.
-func (e *Enforcer) IsLogin() (bool, error) {
-	tokenValue := e.GetRequestToken()
+func (e *Enforcer) IsLogin(ctx ctx.Context) (bool, error) {
+	tokenValue := e.GetRequestToken(ctx)
 	if tokenValue == "" {
 		return false, nil
 	}
@@ -314,8 +306,8 @@ func (e *Enforcer) IsLogin() (bool, error) {
 	return e.validateValue(str)
 }
 
-func (e *Enforcer) GetLoginId() (string, error) {
-	tokenValue := e.GetRequestToken()
+func (e *Enforcer) GetLoginId(ctx ctx.Context) (string, error) {
+	tokenValue := e.GetRequestToken(ctx)
 	str := e.adapter.GetStr(e.spliceTokenKey(tokenValue))
 	if str == "" {
 		return "", errors.New("GetLoginId() failed: not logged in")
@@ -371,21 +363,24 @@ func (e *Enforcer) Kickout(id string, device string) error {
 }
 
 // GetRequestToken read token from requestHeader | cookie | requestBody
-func (e *Enforcer) GetRequestToken() string {
+func (e *Enforcer) GetRequestToken(ctx ctx.Context) string {
 	var tokenValue string
+	if ctx == nil {
+		return ""
+	}
 	if e.config.IsReadHeader {
-		if tokenValue = e.webCtx.Request().Header(e.config.TokenName); tokenValue != "" {
+		if tokenValue = ctx.Request().Header(e.config.TokenName); tokenValue != "" {
 			return tokenValue
 		}
 	}
 	if e.config.IsReadCookie {
-		if tokenValue = e.webCtx.Request().Cookie(e.config.TokenName); tokenValue != "" {
+		if tokenValue = ctx.Request().Cookie(e.config.TokenName); tokenValue != "" {
 			return tokenValue
 		}
 
 	}
 	if e.config.IsReadBody {
-		if tokenValue = e.webCtx.Request().PostForm(e.config.TokenName); tokenValue != "" {
+		if tokenValue = ctx.Request().PostForm(e.config.TokenName); tokenValue != "" {
 			return tokenValue
 		}
 	}

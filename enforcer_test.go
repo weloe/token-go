@@ -32,7 +32,9 @@ func NewTestHttpContext(t *testing.T) (error, ctx.Context) {
 func TestNewEnforcer(t *testing.T) {
 	adapter := NewDefaultAdapter()
 	ctx := httpCtx.NewHttpContext(nil, nil)
-
+	if ctx == nil {
+		t.Errorf("NewHttpContext failed: %v", ctx)
+	}
 	tokenConfig := &config.TokenConfig{
 		TokenName:     "testToken",
 		Timeout:       60,
@@ -45,7 +47,7 @@ func TestNewEnforcer(t *testing.T) {
 	}
 	logger := &log.DefaultLogger{}
 
-	enforcer, err := NewEnforcer(tokenConfig, adapter, ctx)
+	enforcer, err := NewEnforcer(tokenConfig, adapter)
 	enforcer.SetType("u")
 	if enforcer.GetType() != "u" {
 		t.Error("enforcer.loginType should be user")
@@ -67,13 +69,9 @@ func TestNewEnforcer(t *testing.T) {
 		t.Error("enforcer.adapter should be equal to the passed adapter parameter")
 	}
 
-	if enforcer.webCtx != ctx {
-		t.Error("enforcer.webCtx should be equal to the passed ctx parameter")
-	}
-
 }
 
-func NewTestEnforcer(t *testing.T) (error, *Enforcer) {
+func NewTestEnforcer(t *testing.T) (error, *Enforcer, ctx.Context) {
 	reqBody := bytes.NewBufferString("test request body")
 	req, err := http.NewRequest("POST", "/test", reqBody)
 	if err != nil {
@@ -89,11 +87,11 @@ func NewTestEnforcer(t *testing.T) (error, *Enforcer) {
 
 	tokenConfig := config.DefaultTokenConfig()
 
-	enforcer, err := NewEnforcer(tokenConfig, adapter, ctx)
-	return err, enforcer
+	enforcer, err := NewEnforcer(tokenConfig, adapter)
+	return err, enforcer, ctx
 }
 
-func NewTestConcurrentEnforcer(t *testing.T) (error, *Enforcer) {
+func NewTestConcurrentEnforcer(t *testing.T) (error, *Enforcer, ctx.Context) {
 	reqBody := bytes.NewBufferString("test request body")
 	req, err := http.NewRequest("POST", "/test", reqBody)
 	if err != nil {
@@ -111,11 +109,11 @@ func NewTestConcurrentEnforcer(t *testing.T) (error, *Enforcer) {
 	tokenConfig.IsConcurrent = true
 	tokenConfig.IsShare = false
 
-	enforcer, err := NewEnforcer(tokenConfig, adapter, ctx)
-	return err, enforcer
+	enforcer, err := NewEnforcer(tokenConfig, adapter)
+	return err, enforcer, ctx
 }
 
-func NewTestNotConcurrentEnforcer(t *testing.T) (error, *Enforcer) {
+func NewTestNotConcurrentEnforcer(t *testing.T) (error, *Enforcer, ctx.Context) {
 	reqBody := bytes.NewBufferString("test request body")
 	req, err := http.NewRequest("POST", "/test", reqBody)
 	if err != nil {
@@ -133,12 +131,12 @@ func NewTestNotConcurrentEnforcer(t *testing.T) (error, *Enforcer) {
 	tokenConfig.IsConcurrent = false
 	tokenConfig.IsShare = false
 
-	enforcer, err := NewEnforcer(tokenConfig, adapter, ctx)
-	return err, enforcer
+	enforcer, err := NewEnforcer(tokenConfig, adapter)
+	return err, enforcer, ctx
 }
 
 func TestNewEnforcerByFile(t *testing.T) {
-	err, ctx := NewTestHttpContext(t)
+	err, _ := NewTestHttpContext(t)
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
@@ -146,7 +144,7 @@ func TestNewEnforcerByFile(t *testing.T) {
 	adapter := persist.NewDefaultAdapter()
 	conf := "testConf"
 
-	enforcer, err := NewEnforcerByFile(conf, adapter, ctx)
+	enforcer, err := NewEnforcerByFile(conf, adapter)
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
@@ -158,24 +156,22 @@ func TestNewEnforcerByFile(t *testing.T) {
 	if enforcer.adapter != adapter {
 		t.Error("enforcer.adapter should be equal to the passed adapter parameter")
 	}
-	if enforcer.webCtx != ctx {
-		t.Error("enforcer.webCtx should be equal to the passed ctx parameter")
-	}
+
 }
 
 func TestEnforcer_Login(t *testing.T) {
-	err, enforcer := NewTestEnforcer(t)
+	err, enforcer, ctx := NewTestEnforcer(t)
 	enforcer.EnableLog()
 	if err != nil {
 		t.Errorf("NewEnforcer() failed: %v", err)
 	}
 	loginId := "1"
-	_, err = enforcer.Login(loginId)
+	_, err = enforcer.Login(loginId, ctx)
 	if err != nil {
 		t.Errorf("LoginByModel() failed: %v", err)
 	}
 
-	_, err = enforcer.LoginByModel(loginId, model.DefaultLoginModel())
+	_, err = enforcer.LoginByModel(loginId, model.DefaultLoginModel(), ctx)
 	if err != nil {
 		t.Errorf("LoginByModel() failed: %v", err)
 	}
@@ -204,18 +200,18 @@ func TestEnforcer_Login(t *testing.T) {
 }
 
 func TestEnforcer_GetLoginId(t *testing.T) {
-	err, enforcer := NewTestEnforcer(t)
+	err, enforcer, ctx := NewTestEnforcer(t)
 	if err != nil {
 		t.Errorf("NewEnforcer() failed: %v", err)
 	}
 	loginModel := model.DefaultLoginModel()
 	loginModel.Token = "233"
-	_, err = enforcer.LoginByModel("id", loginModel)
+	_, err = enforcer.LoginByModel("id", loginModel, ctx)
 	if err != nil {
 		t.Errorf("Login() failed: %v", err)
 	}
 
-	id, err := enforcer.GetLoginId()
+	id, err := enforcer.GetLoginId(ctx)
 	if err != nil {
 		t.Errorf("GetLoginId() failed: %v", err)
 	}
@@ -227,14 +223,14 @@ func TestEnforcer_GetLoginId(t *testing.T) {
 }
 
 func TestEnforcer_Logout(t *testing.T) {
-	err, enforcer := NewTestEnforcer(t)
+	err, enforcer, ctx := NewTestEnforcer(t)
 	if err != nil {
 		t.Errorf("NewEnforcer() failed: %v", err)
 	}
 
 	loginModel := model.DefaultLoginModel()
 	loginModel.Token = "233"
-	token, err := enforcer.LoginByModel("id", loginModel)
+	token, err := enforcer.LoginByModel("id", loginModel, ctx)
 	if token != "233" {
 		t.Errorf("LoginByModel() failed: unexpected token value %s, want '233' ", token)
 	}
@@ -242,12 +238,12 @@ func TestEnforcer_Logout(t *testing.T) {
 		t.Errorf("Login() failed: %v", err)
 	}
 
-	err = enforcer.Logout()
+	err = enforcer.Logout(ctx)
 	if err != nil {
 		t.Errorf("Logout() failed: %v", err)
 	}
 
-	login, err := enforcer.IsLogin()
+	login, err := enforcer.IsLogin(ctx)
 	if login {
 		t.Errorf("IsLogin() failed: unexpected value %v", login)
 	}
@@ -257,14 +253,14 @@ func TestEnforcer_Logout(t *testing.T) {
 }
 
 func TestEnforcer_Kickout(t *testing.T) {
-	err, enforcer := NewTestEnforcer(t)
+	err, enforcer, ctx := NewTestEnforcer(t)
 	if err != nil {
 		t.Errorf("NewEnforcer() failed: %v", err)
 	}
 
 	loginModel := model.DefaultLoginModel()
 	loginModel.Token = "233"
-	_, err = enforcer.LoginByModel("id", loginModel)
+	_, err = enforcer.LoginByModel("id", loginModel, ctx)
 	if err != nil {
 		t.Errorf("Login() failed: %v", err)
 	}
@@ -278,7 +274,7 @@ func TestEnforcer_Kickout(t *testing.T) {
 	if session != nil {
 		t.Errorf("unexpected session value %v", session)
 	}
-	login, err := enforcer.IsLogin()
+	login, err := enforcer.IsLogin(ctx)
 	if login {
 		t.Errorf("IsLogin() failed: unexpected value %v", login)
 	}
@@ -290,7 +286,7 @@ func TestEnforcer_Kickout(t *testing.T) {
 }
 
 func TestEnforcerNotConcurrentNotShareLogin(t *testing.T) {
-	err, enforcer := NewTestNotConcurrentEnforcer(t)
+	err, enforcer, ctx := NewTestNotConcurrentEnforcer(t)
 	if err != nil {
 		t.Errorf("NewEnforcer() failed: %v", err)
 	}
@@ -298,7 +294,7 @@ func TestEnforcerNotConcurrentNotShareLogin(t *testing.T) {
 	loginModel := model.DefaultLoginModel()
 
 	for i := 0; i < 4; i++ {
-		_, err = enforcer.LoginByModel("id", loginModel)
+		_, err = enforcer.LoginByModel("id", loginModel, ctx)
 		if err != nil {
 			t.Errorf("Login() failed: %v", err)
 		}
@@ -311,14 +307,14 @@ func TestEnforcerNotConcurrentNotShareLogin(t *testing.T) {
 }
 
 func TestEnforcer_ConcurrentShare(t *testing.T) {
-	err, enforcer := NewTestEnforcer(t)
+	err, enforcer, ctx := NewTestEnforcer(t)
 	if err != nil {
 		t.Errorf("NewEnforcer() failed: %v", err)
 	}
 
 	loginModel := model.DefaultLoginModel()
 	for i := 0; i < 5; i++ {
-		_, err = enforcer.LoginByModel("id", loginModel)
+		_, err = enforcer.LoginByModel("id", loginModel, ctx)
 		if err != nil {
 			t.Errorf("Login() failed: %v", err)
 		}
@@ -330,14 +326,14 @@ func TestEnforcer_ConcurrentShare(t *testing.T) {
 
 }
 func TestEnforcer_ConcurrentNotShareMultiLogin(t *testing.T) {
-	err, enforcer := NewTestConcurrentEnforcer(t)
+	err, enforcer, ctx := NewTestConcurrentEnforcer(t)
 	if err != nil {
 		t.Errorf("NewEnforcer() failed: %v", err)
 	}
 
 	loginModel := model.DefaultLoginModel()
 	for i := 0; i < 14; i++ {
-		_, err = enforcer.LoginByModel("id", loginModel)
+		_, err = enforcer.LoginByModel("id", loginModel, ctx)
 		if err != nil {
 			t.Errorf("Login() failed: %v", err)
 		}
@@ -351,11 +347,14 @@ func TestEnforcer_ConcurrentNotShareMultiLogin(t *testing.T) {
 
 func TestNewDefaultEnforcer(t *testing.T) {
 	err, ctx := NewTestHttpContext(t)
+	if ctx == nil {
+		t.Errorf("NewTestHttpContext() failed: %v", err)
+	}
 	if err != nil {
 		t.Errorf("NewTestHttpContext() failed: %v", err)
 	}
 
-	enforcer, err := NewDefaultEnforcer(persist.NewDefaultAdapter(), ctx)
+	enforcer, err := NewDefaultEnforcer(persist.NewDefaultAdapter())
 	if err != nil || enforcer == nil {
 		t.Errorf("NewEnforcer() failed: %v", err)
 	}
