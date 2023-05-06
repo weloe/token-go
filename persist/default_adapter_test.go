@@ -190,7 +190,7 @@ func TestDefaultAdapter_DeleteBatchFilteredValue(t *testing.T) {
 	if err := adapter.SetStr("k_3", "v", -1); err != nil {
 		t.Errorf("SetStr() failed: %v", err)
 	}
-	err := adapter.DeleteBatchFilteredKey("k_")
+	err := adapter.(BatchAdapter).DeleteBatchFilteredKey("k_")
 	if err != nil {
 		t.Errorf("DeleteBatchFilteredKey() failed: %v", err)
 	}

@@ -27,7 +27,4 @@ type Adapter interface {
 	GetTimeout(key string) int64
 	// UpdateTimeout update timeout
 	UpdateTimeout(key string, timeout int64) error
-
-	// DeleteBatchFilteredKey delete data by keyPrefix
-	DeleteBatchFilteredKey(filterKeyPrefix string) error
 }

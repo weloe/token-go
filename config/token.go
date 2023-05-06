@@ -3,8 +3,10 @@ package config
 import "github.com/weloe/token-go/constant"
 
 type TokenConfig struct {
+	// TokenStyle
+	// uuid | uuid-simple | random-string32 | random-string64 | random-string128
+	TokenStyle string
 	// TokenName prefix
-	TokenStyle  string
 	TokenPrefix string
 	TokenName   string
 
@@ -44,7 +46,7 @@ type TokenConfig struct {
 
 	CheckSameToken bool
 
-	CookieConfig *cookieConfig
+	CookieConfig *CookieConfig
 }
 
 func DefaultTokenConfig() *TokenConfig {

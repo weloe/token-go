@@ -1,6 +1,6 @@
 package config
 
-type cookieConfig struct {
+type CookieConfig struct {
 	Domain   string
 	Path     string
 	Secure   bool
@@ -8,8 +8,8 @@ type cookieConfig struct {
 	SameSite string
 }
 
-func DefaultCookieConfig() *cookieConfig {
-	return &cookieConfig{
+func DefaultCookieConfig() *CookieConfig {
+	return &CookieConfig{
 		Domain:   "",
 		Path:     "",
 		Secure:   false,
