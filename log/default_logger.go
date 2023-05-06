@@ -23,7 +23,7 @@ func (d *DefaultLogger) Login(loginType string, id interface{}, tokenValue strin
 	if !d.enable {
 		return
 	}
-	log.Printf("LoginByModel: loginId = %v, loginType = %v, tokenValue = %v, "+
+	log.Printf("Login: loginId = %v, loginType = %v, tokenValue = %v, "+
 		"loginMode = %v", id, loginType, tokenValue, loginModel)
 
 }

@@ -13,6 +13,9 @@ type GenerateTokenFunc struct {
 }
 
 func (g *GenerateTokenFunc) Exec(tokenForm string) (string, error) {
+	if tokenForm == "" {
+		return "", errors.New("GenerateToken failed: tokenStyle is nil")
+	}
 	handlerFunc, err := g.GetFunction(tokenForm)
 	if err != nil {
 		return "", err
@@ -30,7 +33,7 @@ func (g *GenerateTokenFunc) GetFunction(tokenForm string) (GenerateFunc, error) 
 		return nil, errors.New("GetFunction() failed: load func error")
 	}
 	if value == nil {
-		return nil, errors.New("GetFunction() failed: func doesn't exist")
+		return nil, errors.New("GetFunction() failed: this tokenStyle generate func doesn't exist")
 	}
 	handlerFunc := value.(GenerateFunc)
 	return handlerFunc, nil
