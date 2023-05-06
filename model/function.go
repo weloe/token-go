@@ -2,6 +2,7 @@ package model
 
 import (
 	"errors"
+	"github.com/weloe/token-go/constant"
 	"github.com/weloe/token-go/util"
 	"sync"
 )
@@ -41,11 +42,11 @@ func (g *GenerateTokenFunc) GetFunction(tokenForm string) (GenerateFunc, error) 
 
 func LoadFunctionMap() GenerateTokenFunc {
 	fm := &GenerateTokenFunc{fns: &sync.Map{}}
-	fm.AddFunc("uuid", util.GenerateUUID)
-	fm.AddFunc("uuid-simple", util.GenerateSimpleUUID)
-	fm.AddFunc("random-string32", util.GenerateRandomString32)
-	fm.AddFunc("random-string64", util.GenerateRandomString64)
-	fm.AddFunc("random-string128", util.GenerateRandomString128)
+	fm.AddFunc(constant.UUID, util.GenerateUUID)
+	fm.AddFunc(constant.SimpleUUID, util.GenerateSimpleUUID)
+	fm.AddFunc(constant.RandomString32, util.GenerateRandomString32)
+	fm.AddFunc(constant.RandomString64, util.GenerateRandomString64)
+	fm.AddFunc(constant.RandomString128, util.GenerateRandomString128)
 
 	return *fm
 }
