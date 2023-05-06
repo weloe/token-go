@@ -124,6 +124,7 @@ func NewTestNotConcurrentEnforcer(t *testing.T) (error, *Enforcer, ctx.Context) 
 	req.Header.Set(constant.TokenName, "233")
 
 	ctx := httpCtx.NewHttpContext(req, rr)
+	t.Log(ctx)
 
 	adapter := persist.NewDefaultAdapter()
 
@@ -144,7 +145,7 @@ func TestNewEnforcerByFile(t *testing.T) {
 	adapter := persist.NewDefaultAdapter()
 	conf := "testConf"
 
-	enforcer, err := NewEnforcerByFile(conf, adapter)
+	enforcer, err := NewEnforcer(conf, adapter)
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
@@ -163,7 +164,7 @@ func TestEnforcer_Login(t *testing.T) {
 	err, enforcer, ctx := NewTestEnforcer(t)
 	enforcer.EnableLog()
 	if err != nil {
-		t.Errorf("NewEnforcer() failed: %v", err)
+		t.Errorf("InitWithConfig() failed: %v", err)
 	}
 	loginId := "1"
 	_, err = enforcer.Login(loginId, ctx)
@@ -202,7 +203,7 @@ func TestEnforcer_Login(t *testing.T) {
 func TestEnforcer_GetLoginId(t *testing.T) {
 	err, enforcer, ctx := NewTestEnforcer(t)
 	if err != nil {
-		t.Errorf("NewEnforcer() failed: %v", err)
+		t.Errorf("InitWithConfig() failed: %v", err)
 	}
 	loginModel := model.DefaultLoginModel()
 	loginModel.Token = "233"
@@ -225,7 +226,7 @@ func TestEnforcer_GetLoginId(t *testing.T) {
 func TestEnforcer_Logout(t *testing.T) {
 	err, enforcer, ctx := NewTestEnforcer(t)
 	if err != nil {
-		t.Errorf("NewEnforcer() failed: %v", err)
+		t.Errorf("InitWithConfig() failed: %v", err)
 	}
 
 	loginModel := model.DefaultLoginModel()
@@ -255,7 +256,7 @@ func TestEnforcer_Logout(t *testing.T) {
 func TestEnforcer_Kickout(t *testing.T) {
 	err, enforcer, ctx := NewTestEnforcer(t)
 	if err != nil {
-		t.Errorf("NewEnforcer() failed: %v", err)
+		t.Errorf("InitWithConfig() failed: %v", err)
 	}
 
 	loginModel := model.DefaultLoginModel()
@@ -288,7 +289,7 @@ func TestEnforcer_Kickout(t *testing.T) {
 func TestEnforcerNotConcurrentNotShareLogin(t *testing.T) {
 	err, enforcer, ctx := NewTestNotConcurrentEnforcer(t)
 	if err != nil {
-		t.Errorf("NewEnforcer() failed: %v", err)
+		t.Errorf("InitWithConfig() failed: %v", err)
 	}
 
 	loginModel := model.DefaultLoginModel()
@@ -309,7 +310,7 @@ func TestEnforcerNotConcurrentNotShareLogin(t *testing.T) {
 func TestEnforcer_ConcurrentShare(t *testing.T) {
 	err, enforcer, ctx := NewTestEnforcer(t)
 	if err != nil {
-		t.Errorf("NewEnforcer() failed: %v", err)
+		t.Errorf("InitWithConfig() failed: %v", err)
 	}
 
 	loginModel := model.DefaultLoginModel()
@@ -328,7 +329,7 @@ func TestEnforcer_ConcurrentShare(t *testing.T) {
 func TestEnforcer_ConcurrentNotShareMultiLogin(t *testing.T) {
 	err, enforcer, ctx := NewTestConcurrentEnforcer(t)
 	if err != nil {
-		t.Errorf("NewEnforcer() failed: %v", err)
+		t.Errorf("InitWithConfig() failed: %v", err)
 	}
 
 	loginModel := model.DefaultLoginModel()
@@ -354,8 +355,18 @@ func TestNewDefaultEnforcer(t *testing.T) {
 		t.Errorf("NewTestHttpContext() failed: %v", err)
 	}
 
-	enforcer, err := NewDefaultEnforcer(persist.NewDefaultAdapter())
+	enforcer, err := NewEnforcer(persist.NewDefaultAdapter())
+
 	if err != nil || enforcer == nil {
-		t.Errorf("NewEnforcer() failed: %v", err)
+		t.Errorf("InitWithConfig() failed: %v", err)
 	}
+}
+
+func TestNewEnforcer1(t *testing.T) {
+	enforcer, err := NewEnforcer(NewDefaultAdapter())
+	t.Log(err)
+	t.Log(enforcer)
+	enforcer, err = NewEnforcer(config.DefaultTokenConfig(), NewDefaultAdapter())
+	t.Log(err)
+	t.Log(enforcer)
 }

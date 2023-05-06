@@ -2,6 +2,7 @@ package token_go
 
 import (
 	"errors"
+	"fmt"
 	"github.com/weloe/token-go/config"
 	"github.com/weloe/token-go/constant"
 	"github.com/weloe/token-go/ctx"
@@ -9,6 +10,7 @@ import (
 	"github.com/weloe/token-go/log"
 	"github.com/weloe/token-go/model"
 	"github.com/weloe/token-go/persist"
+	"github.com/weloe/token-go/util"
 	"net/http"
 	"strconv"
 )
@@ -23,20 +25,6 @@ type Enforcer struct {
 	logger       log.Logger
 }
 
-func NewEnforcer(tokenConfig *config.TokenConfig, adapter persist.Adapter) (*Enforcer, error) {
-	fm := model.LoadFunctionMap()
-	if tokenConfig == nil || adapter == nil {
-		return nil, errors.New("NewEnforcer() params should be not nil")
-	}
-	return &Enforcer{
-		loginType:    "user",
-		config:       *tokenConfig,
-		generateFunc: fm,
-		adapter:      adapter,
-		logger:       &log.DefaultLogger{},
-	}, nil
-}
-
 func NewDefaultAdapter() persist.Adapter {
 	return persist.NewDefaultAdapter()
 }
@@ -45,34 +33,76 @@ func NewHttpContext(req *http.Request, writer http.ResponseWriter) ctx.Context {
 	return httpCtx.NewHttpContext(req, writer)
 }
 
-func NewDefaultEnforcer(adapter persist.Adapter) (*Enforcer, error) {
-	fm := model.LoadFunctionMap()
-	if adapter == nil {
-		return nil, errors.New("NewDefaultEnforcer() params should be not nil")
+func NewEnforcer(args ...interface{}) (*Enforcer, error) {
+	var err error
+	var enforcer *Enforcer
+	if len(args) > 2 {
+		return nil, fmt.Errorf("NewEnforcer() failed: unexpected args length = %v, it should be less than or equal to 2", len(args))
 	}
-	return &Enforcer{
-		loginType:    "user",
-		config:       *config.DefaultTokenConfig(),
-		generateFunc: fm,
-		adapter:      adapter,
-		logger:       &log.DefaultLogger{},
-	}, nil
+	if util.HasNil(args) {
+		return nil, errors.New("NewEnforcer() failed: parameters cannot be nil")
+	}
+
+	if len(args) == 1 {
+		switch args[0].(type) {
+		case persist.Adapter:
+			enforcer, err = InitWithDefaultConfig(args[0].(persist.Adapter))
+		case *config.TokenConfig:
+			adapter, ok := args[1].(persist.Adapter)
+			if ok {
+				enforcer, err = InitWithConfig(args[0].(*config.TokenConfig), adapter)
+			} else {
+				return nil, fmt.Errorf("NewEnforcer() failed: unexpected args[1] type, it should be persist.Adapter")
+			}
+		}
+	} else if len(args) == 2 {
+		adapter, ok := args[1].(persist.Adapter)
+		if !ok {
+			return nil, errors.New("NewEnforcer() failed: unexpected args[1] type, it should be persist.Adapter")
+		}
+		switch args[0].(type) {
+		case *config.TokenConfig:
+			if ok {
+				enforcer, err = InitWithConfig(args[0].(*config.TokenConfig), adapter)
+			} else {
+				enforcer, err = InitWithConfig(args[0].(*config.TokenConfig), adapter)
+			}
+		case string:
+			enforcer, err = InitWithFile(args[0].(string), adapter)
+		}
+	}
+
+	return enforcer, err
 }
 
-func NewEnforcerByFile(conf string, adapter persist.Adapter) (*Enforcer, error) {
+func InitWithDefaultConfig(adapter persist.Adapter) (*Enforcer, error) {
+	if adapter == nil {
+		return nil, errors.New("InitWithDefaultConfig() failed: parameters cannot be nil")
+	}
+	return InitWithConfig(config.DefaultTokenConfig(), adapter)
+}
+
+func InitWithFile(conf string, adapter persist.Adapter) (*Enforcer, error) {
 	if conf == "" || adapter == nil {
-		return nil, errors.New("NewEnforcerByFile() params should be not nil")
+		return nil, errors.New("InitWithFile() failed: parameters cannot be nil")
 	}
 	newConfig, err := config.NewConfig(conf)
 	if err != nil {
 		return nil, err
 	}
-	fm := model.LoadFunctionMap()
+	enforcer, err := InitWithConfig(newConfig.(*config.FileConfig).TokenConfig, adapter)
+	enforcer.conf = conf
+	return enforcer, err
+}
 
+func InitWithConfig(tokenConfig *config.TokenConfig, adapter persist.Adapter) (*Enforcer, error) {
+	fm := model.LoadFunctionMap()
+	if tokenConfig == nil || adapter == nil {
+		return nil, errors.New("InitWithConfig() failed: parameters cannot be nil")
+	}
 	return &Enforcer{
 		loginType:    "user",
-		conf:         conf,
-		config:       *(newConfig.(*config.FileConfig).TokenConfig),
+		config:       *tokenConfig,
 		generateFunc: fm,
 		adapter:      adapter,
 		logger:       &log.DefaultLogger{},
@@ -335,7 +365,7 @@ func (e *Enforcer) Kickout(id string, device string) error {
 			if tokenSign, ok := element.Value.(*model.TokenSign); ok {
 				elementV := tokenSign.Value
 				session.RemoveTokenSign(elementV)
-				// sign token replaced
+				// sign token kicked
 				err := e.adapter.UpdateStr(e.spliceTokenKey(elementV), strconv.Itoa(constant.BeKicked))
 				if err != nil {
 					return err
