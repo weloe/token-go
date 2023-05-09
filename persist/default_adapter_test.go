@@ -181,6 +181,7 @@ func TestDefaultAdapter_InterfaceOperation(t *testing.T) {
 
 func TestDefaultAdapter_DeleteBatchFilteredValue(t *testing.T) {
 	adapter := NewTestDefaultAdapter()
+	adapter.(*DefaultAdapter).StartCleanTimer(2)
 	if err := adapter.SetStr("k_1", "v", -1); err != nil {
 		t.Errorf("SetStr() failed: %v", err)
 	}
@@ -198,4 +199,5 @@ func TestDefaultAdapter_DeleteBatchFilteredValue(t *testing.T) {
 	if str != "" {
 		t.Errorf("DeleteBatchFilteredKey() failed")
 	}
+	time.Sleep(5 * time.Second)
 }

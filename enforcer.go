@@ -100,13 +100,29 @@ func InitWithConfig(tokenConfig *config.TokenConfig, adapter persist.Adapter) (*
 	if tokenConfig == nil || adapter == nil {
 		return nil, errors.New("InitWithConfig() failed: parameters cannot be nil")
 	}
-	return &Enforcer{
+	e := &Enforcer{
 		loginType:    "user",
 		config:       *tokenConfig,
 		generateFunc: fm,
 		adapter:      adapter,
 		logger:       &log.DefaultLogger{},
-	}, nil
+	}
+
+	e.startCleanTimer()
+
+	return e, nil
+}
+
+// if e.adapter.(type) == *persist.DefaultAdapter, can start cleanTimer
+func (e *Enforcer) startCleanTimer() {
+	defaultAdapter, ok := e.adapter.(*persist.DefaultAdapter)
+	if ok {
+		dataRefreshPeriod := e.config.DataRefreshPeriod
+		if period := dataRefreshPeriod; period >= 0 {
+			defaultAdapter.StartCleanTimer(dataRefreshPeriod)
+			e.logger.StartCleanTimer(dataRefreshPeriod)
+		}
+	}
 }
 
 func (e *Enforcer) SetType(t string) {

@@ -36,14 +36,15 @@ func TestNewEnforcer(t *testing.T) {
 		t.Errorf("NewHttpContext failed: %v", ctx)
 	}
 	tokenConfig := &config.TokenConfig{
-		TokenName:     "testToken",
-		Timeout:       60,
-		IsReadCookie:  true,
-		IsReadHeader:  true,
-		IsReadBody:    false,
-		IsConcurrent:  false,
-		IsShare:       false,
-		MaxLoginCount: -1,
+		TokenName:         "testToken",
+		Timeout:           60,
+		IsReadCookie:      true,
+		IsReadHeader:      true,
+		IsReadBody:        false,
+		IsConcurrent:      false,
+		IsShare:           false,
+		MaxLoginCount:     -1,
+		DataRefreshPeriod: -1,
 	}
 	logger := &log.DefaultLogger{}
 
@@ -131,6 +132,7 @@ func NewTestNotConcurrentEnforcer(t *testing.T) (error, *Enforcer, ctx.Context) 
 	tokenConfig := config.DefaultTokenConfig()
 	tokenConfig.IsConcurrent = false
 	tokenConfig.IsShare = false
+	tokenConfig.DataRefreshPeriod = 30
 
 	enforcer, err := NewEnforcer(tokenConfig, adapter)
 	return err, enforcer, ctx

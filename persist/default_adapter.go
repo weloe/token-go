@@ -12,6 +12,7 @@ import (
 type DefaultAdapter struct {
 	dataMap   *sync.Map
 	expireMap *sync.Map
+	once      sync.Once
 }
 
 var _ Adapter = (*DefaultAdapter)(nil)
@@ -167,4 +168,28 @@ func (d *DefaultAdapter) getTimeout(key string) int64 {
 		return constant.NotValueExpire
 	}
 	return timeout
+}
+
+func (d *DefaultAdapter) StartCleanTimer(period int64) {
+	d.once.Do(func() {
+		go d.CleanTask(period)
+	})
+}
+
+func (d *DefaultAdapter) CleanTask(period int64) {
+	if period < 0 {
+		return
+	}
+	duration := period
+
+	// create timer
+	ticker := time.NewTicker(time.Duration(duration) * time.Second)
+	defer ticker.Stop()
+
+	for range ticker.C {
+		d.expireMap.Range(func(key, value any) bool {
+			_ = d.getExpireAndDelete(key.(string))
+			return true
+		})
+	}
 }

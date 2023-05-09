@@ -11,6 +11,10 @@ type DefaultLogger struct {
 	enable bool
 }
 
+func (d *DefaultLogger) StartCleanTimer(period int64) {
+	log.Printf("timer period = %v, timer start", period)
+}
+
 func (d *DefaultLogger) Enable(bool bool) {
 	d.enable = bool
 }

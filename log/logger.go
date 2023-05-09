@@ -10,4 +10,7 @@ type Logger interface {
 
 	// IsEnabled return if logger is enabled
 	IsEnabled() bool
+
+	// StartCleanTimer log after start clean timer
+	StartCleanTimer(period int64)
 }
