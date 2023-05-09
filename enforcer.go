@@ -164,6 +164,9 @@ func (e *Enforcer) Login(id string, ctx ctx.Context) (string, error) {
 
 // LoginByModel login by id and loginModel, return tokenValue and error
 func (e *Enforcer) LoginByModel(id string, loginModel *model.Login, ctx ctx.Context) (string, error) {
+	if loginModel == nil {
+		return "", errors.New("arg loginModel can not be nil")
+	}
 	var err error
 	var session *model.Session
 	var tokenValue string
