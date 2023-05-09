@@ -1,6 +1,10 @@
 package config
 
-import "reflect"
+import (
+	"fmt"
+	"github.com/spf13/viper"
+	"reflect"
+)
 
 type ConfigInterface interface {
 	loadTokenConfig(conf string) (*TokenConfig, error)
@@ -13,8 +17,19 @@ type FileConfig struct {
 }
 
 func (c *FileConfig) loadTokenConfig(conf string) (*TokenConfig, error) {
-	//TODO implement me
-	return &TokenConfig{}, nil
+	var config *FileConfig
+	viper.SetConfigFile(conf)
+	var err error
+	err = viper.ReadInConfig()
+	if err != nil {
+		return nil, fmt.Errorf("error config file: %s \n", err)
+	}
+	err = viper.Unmarshal(&config)
+	if err != nil {
+		return nil, fmt.Errorf("error viper unmarshal config: %s \n", err)
+	}
+
+	return config.TokenConfig, nil
 }
 
 func (c *FileConfig) parse(confName string) (err error) {

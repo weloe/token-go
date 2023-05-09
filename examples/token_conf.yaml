@@ -1,0 +1,14 @@
+TokenConfig:
+  tokenStyle: uuid
+  tokenName: myTokenName
+  timeout: 2592000
+  activityTimeout: -1
+  dataRefreshPeriod: 30
+  autoRenew: true
+  isConcurrent: true
+  isShare: true
+  maxLoginCount: 12
+  isReadBody: true
+  isReadHeader: true
+  isReadCookie: true
+  isWriteHeader: false

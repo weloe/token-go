@@ -3,11 +3,23 @@ package config
 import "testing"
 
 func TestNewConfig(t *testing.T) {
-	config, err := NewConfig("")
+	config, err := NewConfig("../examples/token_conf.yaml")
 	if err != nil {
-		t.Fatalf("read error: %v", err)
+		t.Errorf("read error: %v", err)
 	}
-	t.Log(config)
+	tokenConfig := config.(*FileConfig).TokenConfig
+
+	t.Log(tokenConfig)
+}
+
+func TestNewIniConfig(t *testing.T) {
+	config, err := NewConfig("../examples/token_conf.ini")
+	if err != nil {
+		t.Errorf("read error: %v", err)
+	}
+	tokenConfig := config.(*FileConfig).TokenConfig
+
+	t.Log(tokenConfig)
 }
 
 func TestDefaultCookieConfig(t *testing.T) {

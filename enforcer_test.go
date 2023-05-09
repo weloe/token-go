@@ -145,7 +145,7 @@ func TestNewEnforcerByFile(t *testing.T) {
 	}
 
 	adapter := persist.NewDefaultAdapter()
-	conf := "testConf"
+	conf := "./examples/token_conf.yaml"
 
 	enforcer, err := NewEnforcer(conf, adapter)
 	if err != nil {
