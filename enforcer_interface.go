@@ -26,6 +26,10 @@ type IEnforcer interface {
 
 	CheckLogin(ctx ctx.Context) error
 
+	SetAuth(manager interface{})
+	CheckRole(ctx ctx.Context, role string) error
+	CheckPermission(ctx ctx.Context, permission string) error
+
 	SetType(t string)
 	GetType() string
 	GetAdapter() persist.Adapter

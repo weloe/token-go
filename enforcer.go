@@ -23,6 +23,7 @@ type Enforcer struct {
 	adapter      persist.Adapter
 	watcher      persist.Watcher
 	logger       log.Logger
+	authManager  interface{}
 }
 
 func NewDefaultAdapter() persist.Adapter {
