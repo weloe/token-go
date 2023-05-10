@@ -192,6 +192,10 @@ func TestEnforcer_Login(t *testing.T) {
 	session := enforcer.GetSession("1")
 	t.Logf("id = %v  session.tokenSign len = %v", "1", session.TokenSignList.Len())
 
+	err = enforcer.CheckLogin(ctx)
+	if err == nil {
+		t.Errorf("CheckLogin() failed: CheckLogin() return nil")
+	}
 	login, err = enforcer.IsLoginById(loginId)
 	if err != nil {
 		t.Logf("%v error: %v", login, err)

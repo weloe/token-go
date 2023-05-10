@@ -24,6 +24,8 @@ type IEnforcer interface {
 
 	GetRequestToken(ctx ctx.Context) string
 
+	CheckLogin(ctx ctx.Context) error
+
 	SetType(t string)
 	GetType() string
 	GetAdapter() persist.Adapter

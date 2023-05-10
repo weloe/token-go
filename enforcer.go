@@ -355,6 +355,14 @@ func (e *Enforcer) IsLogin(ctx ctx.Context) (bool, error) {
 	return e.validateValue(str)
 }
 
+func (e *Enforcer) CheckLogin(ctx ctx.Context) error {
+	_, err := e.GetLoginId(ctx)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (e *Enforcer) GetLoginId(ctx ctx.Context) (string, error) {
 	tokenValue := e.GetRequestToken(ctx)
 	str := e.adapter.GetStr(e.spliceTokenKey(tokenValue))
