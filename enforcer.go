@@ -445,6 +445,12 @@ func (e *Enforcer) GetRequestToken(ctx ctx.Context) string {
 	return tokenValue
 }
 
+// AddTokenGenerateFun add token generate strategy
+func (e *Enforcer) AddTokenGenerateFun(tokenStyle string, f model.GenerateFunc) error {
+	e.generateFunc.AddFunc(tokenStyle, f)
+	return nil
+}
+
 func (e *Enforcer) GetSession(id string) *model.Session {
 	if v := e.adapter.Get(e.spliceSessionKey(id)); v != nil {
 		session := v.(*model.Session)

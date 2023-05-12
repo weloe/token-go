@@ -1,5 +1,6 @@
 package constant
 
+// tokenStyle constant
 const (
 	UUID            = "uuid"
 	SimpleUUID      = "uuid-simple"

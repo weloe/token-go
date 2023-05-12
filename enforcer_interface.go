@@ -23,6 +23,7 @@ type IEnforcer interface {
 	Kickout(id string, device string) error
 
 	GetRequestToken(ctx ctx.Context) string
+	AddTokenGenerateFun(tokenStyle string, f model.GenerateFunc) error
 
 	CheckLogin(ctx ctx.Context) error
 
