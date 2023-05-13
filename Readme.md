@@ -74,6 +74,12 @@ func Kickout(w http.ResponseWriter, req *http.Request) {
 
 ## Custom TokenConfig
 
+The same user can only log in once:  `IsConcurrent = false && IsShare = false`
+
+The same user logs in multiple times and shares a token:  `IsConcurrent = true && IsShare = false`
+
+Multiple logins of the same user to multiple tokens:  `IsConcurrent = true && IsShare = true`
+
 ```go
 import (
 	"fmt"
@@ -102,4 +108,88 @@ func main() {
 	enforcer, err = tokenGo.NewEnforcer(adapter, tokenConfig)
 }
 ```
+You can also configure it using a yml or ini file like this
 
+[token-go/token_conf.ini at master · weloe/token-go · GitHub](https://github.com/weloe/token-go/blob/master/examples/token_conf.ini)
+
+[token-go/token_conf.yaml at master · weloe/token-go · GitHub](https://github.com/weloe/token-go/blob/master/examples/token_conf.yaml)
+
+Then use `enforcer, err = tokenGo.NewEnforcer(adapter, filepath)`  to init.
+
+## Authorization
+
+A simple permission verification method is also provided
+```go
+type ACL interface {
+	GetPermission(id string) []string
+}
+```
+```go
+type RBAC interface {
+	GetRole(id string) []string
+}
+```
+Implement either of these two interfaces and call `enforcer.SetAuth(model)`
+After that, you can use these two APIs for permission verification
+
+``` go
+// implement RBAC
+CheckRole(ctx ctx.Context, role string) error
+// implement ACL
+CheckPermission(ctx ctx.Context, permission string) error
+```
+### example
+
+```go
+type Auth struct {
+}
+
+func (m *Auth) GetRole(id string) []string {
+	var arr = make([]string, 2)
+	arr[1] = "user"
+	return arr
+}
+func (m *Auth) GetPermission(id string) []string {
+	var arr = make([]string, 2)
+	arr[1] = "user::get"
+	return arr
+}
+
+
+func main() {
+	var err error
+	// use default adapter
+	adapter := tokenGo.NewDefaultAdapter()
+	enforcer, err = tokenGo.NewEnforcer(adapter)
+	// set auth
+	enforcer.SetAuth(&Auth{})
+	// enable logger
+	enforcer.EnableLog()
+	if err != nil {
+		log.Fatal(err)
+	}
+	
+	http.HandleFunc("/user/check", CheckAuth)
+	
+	log.Fatal(http.ListenAndServe(":8081", nil))
+}
+
+func CheckAuth(w http.ResponseWriter, req *http.Request) {
+	ctx := tokenGo.NewHttpContext(req, w)
+	err := enforcer.CheckRole(ctx, "user")
+	if err != nil {
+		fmt.Fprintf(w, "CheckRole() error: %s\n", err)
+		return
+	}
+	err = enforcer.CheckPermission(ctx, "user::get")
+	if err != nil {
+		fmt.Fprintf(w, "CheckPermission() error: %s\n", err)
+		return
+	}
+	fmt.Fprintf(w, "you have authorization")
+}
+```
+
+## Api
+
+[token_go package - github.com/weloe/token-go - Go Packages](https://pkg.go.dev/github.com/weloe/token-go#section-documentation)
