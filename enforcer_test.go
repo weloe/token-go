@@ -48,7 +48,7 @@ func TestNewEnforcer(t *testing.T) {
 	}
 	logger := &log.DefaultLogger{}
 
-	enforcer, err := NewEnforcer(tokenConfig, adapter)
+	enforcer, err := NewEnforcer(adapter, tokenConfig)
 	enforcer.SetType("u")
 	if enforcer.GetType() != "u" {
 		t.Error("enforcer.loginType should be user")
@@ -88,7 +88,7 @@ func NewTestEnforcer(t *testing.T) (error, *Enforcer, ctx.Context) {
 
 	tokenConfig := config.DefaultTokenConfig()
 
-	enforcer, err := NewEnforcer(tokenConfig, adapter)
+	enforcer, err := NewEnforcer(adapter, tokenConfig)
 	return err, enforcer, ctx
 }
 
@@ -110,7 +110,7 @@ func NewTestConcurrentEnforcer(t *testing.T) (error, *Enforcer, ctx.Context) {
 	tokenConfig.IsConcurrent = true
 	tokenConfig.IsShare = false
 
-	enforcer, err := NewEnforcer(tokenConfig, adapter)
+	enforcer, err := NewEnforcer(adapter, tokenConfig)
 	return err, enforcer, ctx
 }
 
@@ -134,7 +134,7 @@ func NewTestNotConcurrentEnforcer(t *testing.T) (error, *Enforcer, ctx.Context) 
 	tokenConfig.IsShare = false
 	tokenConfig.DataRefreshPeriod = 30
 
-	enforcer, err := NewEnforcer(tokenConfig, adapter)
+	enforcer, err := NewEnforcer(adapter, tokenConfig)
 	return err, enforcer, ctx
 }
 
@@ -147,7 +147,7 @@ func TestNewEnforcerByFile(t *testing.T) {
 	adapter := persist.NewDefaultAdapter()
 	conf := "./examples/token_conf.yaml"
 
-	enforcer, err := NewEnforcer(conf, adapter)
+	enforcer, err := NewEnforcer(adapter, conf)
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
@@ -372,7 +372,7 @@ func TestNewEnforcer1(t *testing.T) {
 	enforcer, err := NewEnforcer(NewDefaultAdapter())
 	t.Log(err)
 	t.Log(enforcer)
-	enforcer, err = NewEnforcer(config.DefaultTokenConfig(), NewDefaultAdapter())
+	enforcer, err = NewEnforcer(NewDefaultAdapter(), config.DefaultTokenConfig())
 	t.Log(err)
 	t.Log(enforcer)
 }

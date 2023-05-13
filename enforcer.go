@@ -34,7 +34,7 @@ func NewHttpContext(req *http.Request, writer http.ResponseWriter) ctx.Context {
 	return httpCtx.NewHttpContext(req, writer)
 }
 
-func NewEnforcer(args ...interface{}) (*Enforcer, error) {
+func NewEnforcer(adapter persist.Adapter, args ...interface{}) (*Enforcer, error) {
 	var err error
 	var enforcer *Enforcer
 	if len(args) > 2 {
@@ -44,32 +44,16 @@ func NewEnforcer(args ...interface{}) (*Enforcer, error) {
 		return nil, errors.New("NewEnforcer() failed: parameters cannot be nil")
 	}
 
-	if len(args) == 1 {
-		switch args[0].(type) {
-		case persist.Adapter:
-			enforcer, err = InitWithDefaultConfig(args[0].(persist.Adapter))
-		case *config.TokenConfig:
-			adapter, ok := args[1].(persist.Adapter)
-			if ok {
-				enforcer, err = InitWithConfig(args[0].(*config.TokenConfig), adapter)
-			} else {
-				return nil, fmt.Errorf("NewEnforcer() failed: unexpected args[1] type, it should be persist.Adapter")
-			}
-		}
-	} else if len(args) == 2 {
-		adapter, ok := args[1].(persist.Adapter)
-		if !ok {
-			return nil, errors.New("NewEnforcer() failed: unexpected args[1] type, it should be persist.Adapter")
-		}
+	if len(args) == 0 {
+		enforcer, err = InitWithDefaultConfig(adapter)
+	} else if len(args) == 1 {
 		switch args[0].(type) {
 		case *config.TokenConfig:
-			if ok {
-				enforcer, err = InitWithConfig(args[0].(*config.TokenConfig), adapter)
-			} else {
-				enforcer, err = InitWithConfig(args[0].(*config.TokenConfig), adapter)
-			}
+			enforcer, err = InitWithConfig(args[0].(*config.TokenConfig), adapter)
 		case string:
 			enforcer, err = InitWithFile(args[0].(string), adapter)
+		default:
+			return nil, errors.New("NewEnforcer() failed: the second parameter should be *TokenConfig or string")
 		}
 	}
 

@@ -99,7 +99,7 @@ func main() {
 		IsShare:       true,
 		MaxLoginCount: -1,
 	}
-	enforcer, err = tokenGo.NewEnforcer(tokenConfig, adapter)
+	enforcer, err = tokenGo.NewEnforcer(adapter, tokenConfig)
 }
 ```
 
