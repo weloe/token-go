@@ -378,6 +378,13 @@ func (e *Enforcer) GetLoginId(ctx ctx.Context) (string, error) {
 	return str, nil
 }
 
+func (e *Enforcer) GetLoginCount(id string) int {
+	if session := e.GetSession(id); session != nil {
+		return session.TokenSignList.Len()
+	}
+	return 0
+}
+
 func (e *Enforcer) Banned(id string, service string) error {
 	panic("implement me ...")
 }

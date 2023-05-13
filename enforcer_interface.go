@@ -16,6 +16,7 @@ type IEnforcer interface {
 	IsLogin(ctx ctx.Context) (bool, error)
 	IsLoginById(id string) (bool, error)
 	GetLoginId(ctx ctx.Context) (string, error)
+	GetLoginCount(id string) int
 
 	Replaced(id string, device string) error
 	// Banned TODO
