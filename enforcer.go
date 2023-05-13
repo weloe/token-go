@@ -183,18 +183,11 @@ func (e *Enforcer) LoginByModel(id string, loginModel *model.Login, ctx ctx.Cont
 	// add tokenSign
 	if session = e.GetSession(id); session == nil {
 		session = model.NewSession(e.spliceSessionKey(id), "account-session", id)
-		session.AddTokenSign(&model.TokenSign{
-			Value:  tokenValue,
-			Device: loginModel.Device,
-		})
 	}
-
-	if !(tokenConfig.IsConcurrent && tokenConfig.IsShare) {
-		session.AddTokenSign(&model.TokenSign{
-			Value:  tokenValue,
-			Device: loginModel.Device,
-		})
-	}
+	session.AddTokenSign(&model.TokenSign{
+		Value:  tokenValue,
+		Device: loginModel.Device,
+	})
 
 	// reset session
 	err = e.SetSession(id, session, loginModel.Timeout)
