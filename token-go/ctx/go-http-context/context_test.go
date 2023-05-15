@@ -3,13 +3,13 @@ package go_http_context
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/weloe/token-go/ctx"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"strings"
 	"testing"
 	"time"
-	"token-go/token-go/ctx"
 )
 
 func NewTestRequest(t *testing.T) *http.Request {

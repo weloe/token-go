@@ -2,6 +2,7 @@ package model
 
 import (
 	"container/list"
+	"encoding/json"
 	"sync"
 	"time"
 )
@@ -106,4 +107,12 @@ func (s *Session) GetLastTokenByDevice(device string) string {
 		return tokenSign.Value
 	}
 	return ""
+}
+
+func (s *Session) MarshalBinary() ([]byte, error) {
+	return json.Marshal(&s)
+}
+
+func (s *Session) UnmarshalBinary(data []byte) error {
+	return json.Unmarshal(data, &s)
 }

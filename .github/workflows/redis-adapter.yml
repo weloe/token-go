@@ -1,4 +1,4 @@
-name: Go-Build-Test
+name: Redis-Adapter-Build-Test
 
 on: [push, pull_request]
 
@@ -6,6 +6,12 @@ jobs:
 
   test:
     runs-on: ubuntu-latest
+
+    services:
+      redis:
+        image: redis:latest
+        ports:
+          - "6379:6379"
     strategy:
       matrix:
         go: [ '1.18', '1.19', '1.20' ]
@@ -17,28 +23,14 @@ jobs:
         with:
           go-version: ${{ matrix.go }}
 
+      - name: Start Redis server
+        run: |
+          export REDIS_HOST="127.0.0.1"
+
       - name: Run go test
         run: |
-          cd token-go/
+          cd redis-adapter/
           go test -v ./...
-
-  benchmark:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        go: [ '1.18' ]
-    steps:
-      - uses: actions/checkout@v2
-
-      - name: Set up Go
-        uses: actions/setup-go@v2
-        with:
-          go-version: ${{ matrix.go }}
-
-      - name: Run go test bench
-        run: | 
-          cd token-go/
-          go test -bench=.
 
   lint:
     runs-on: ubuntu-latest
@@ -54,4 +46,4 @@ jobs:
         uses: golangci/golangci-lint-action@v3
         with:
           version: v1.51
-          working-directory: token-go/
+          working-directory: redis-adapter/
