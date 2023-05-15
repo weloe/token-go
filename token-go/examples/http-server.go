@@ -2,12 +2,12 @@ package main
 
 import (
 	"fmt"
-	tokenGo "github.com/weloe/token-go"
+	token_go "github.com/weloe/token-go"
 	"log"
 	"net/http"
 )
 
-var enforcer *tokenGo.Enforcer
+var enforcer *token_go.Enforcer
 
 type Auth struct {
 }
@@ -26,8 +26,8 @@ func (m *Auth) GetPermission(id string) []string {
 func main() {
 	var err error
 	// use default adapter
-	adapter := tokenGo.NewDefaultAdapter()
-	enforcer, err = tokenGo.NewEnforcer(adapter)
+	adapter := token_go.NewDefaultAdapter()
+	enforcer, err = token_go.NewEnforcer(adapter)
 	// set auth
 	enforcer.SetAuth(&Auth{})
 	// enable logger
@@ -46,7 +46,7 @@ func main() {
 }
 
 func CheckAuth(w http.ResponseWriter, req *http.Request) {
-	ctx := tokenGo.NewHttpContext(req, w)
+	ctx := token_go.NewHttpContext(req, w)
 	err := enforcer.CheckRole(ctx, "user")
 	if err != nil {
 		fmt.Fprintf(w, "CheckRole() error: %s\n", err)
@@ -61,7 +61,7 @@ func CheckAuth(w http.ResponseWriter, req *http.Request) {
 }
 
 func Login(w http.ResponseWriter, req *http.Request) {
-	token, err := enforcer.Login("1", tokenGo.NewHttpContext(req, w))
+	token, err := enforcer.Login("1", token_go.NewHttpContext(req, w))
 	if err != nil {
 		fmt.Fprintf(w, "Login error: %s\n", err)
 	}
@@ -69,7 +69,7 @@ func Login(w http.ResponseWriter, req *http.Request) {
 }
 
 func Logout(w http.ResponseWriter, req *http.Request) {
-	err := enforcer.Logout(tokenGo.NewHttpContext(req, w))
+	err := enforcer.Logout(token_go.NewHttpContext(req, w))
 	if err != nil {
 		fmt.Fprintf(w, "Logout error: %s\n", err)
 	}
@@ -77,7 +77,7 @@ func Logout(w http.ResponseWriter, req *http.Request) {
 }
 
 func IsLogin(w http.ResponseWriter, req *http.Request) {
-	login, err := enforcer.IsLogin(tokenGo.NewHttpContext(req, w))
+	login, err := enforcer.IsLogin(token_go.NewHttpContext(req, w))
 	if err != nil {
 		fmt.Fprintf(w, "IsLogin() = %v: %v", login, err)
 	}
