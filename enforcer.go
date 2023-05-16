@@ -449,14 +449,57 @@ func (e *Enforcer) AddTokenGenerateFun(tokenStyle string, f model.GenerateFunc) 
 
 func (e *Enforcer) GetSession(id string) *model.Session {
 	if v := e.adapter.Get(e.spliceSessionKey(id)); v != nil {
-		session := v.(*model.Session)
-		return session
+		if s := e.sessionUnSerialize(v); s != nil {
+			return s
+		} else {
+			session, ok := v.(*model.Session)
+			if !ok {
+				return nil
+			}
+			return session
+		}
 	}
 	return nil
 }
 
+func (e *Enforcer) sessionUnSerialize(v interface{}) *model.Session {
+	// get serializer
+	serializer, ok := e.adapter.(persist.SerializerAdapter)
+	if !ok {
+		return nil
+	}
+
+	// to bytes
+	bytes, err := util.InterfaceToBytes(v)
+	if err != nil {
+		return nil
+	}
+	session, err := serializer.UnSerialize(bytes)
+	if err != nil {
+		return nil
+	}
+	return session
+}
+
+func (e *Enforcer) sessionSerialize(v *model.Session) ([]byte, error) {
+	serializer, ok := e.adapter.(persist.SerializerAdapter)
+
+	if !ok {
+		return nil, nil
+	}
+	return serializer.Serialize(v)
+}
+
 func (e *Enforcer) SetSession(id string, session *model.Session, timeout int64) error {
-	err := e.adapter.Set(e.spliceSessionKey(id), session, timeout)
+	bytes, err := e.sessionSerialize(session)
+	if err != nil {
+		return err
+	}
+	if bytes != nil {
+		err = e.adapter.Set(e.spliceSessionKey(id), bytes, timeout)
+	} else {
+		err = e.adapter.Set(e.spliceSessionKey(id), session, timeout)
+	}
 	if err != nil {
 		return err
 	}
@@ -465,6 +508,22 @@ func (e *Enforcer) SetSession(id string, session *model.Session, timeout int64) 
 
 func (e *Enforcer) deleteSession(id string) error {
 	err := e.adapter.Delete(e.spliceSessionKey(id))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (e *Enforcer) updateSession(id string, session *model.Session) error {
+	bytes, err := e.sessionSerialize(session)
+	if err != nil {
+		return err
+	}
+	if bytes != nil {
+		err = e.adapter.Update(e.spliceSessionKey(id), bytes)
+	} else {
+		err = e.adapter.Update(e.spliceSessionKey(id), session)
+	}
 	if err != nil {
 		return err
 	}

@@ -378,3 +378,44 @@ func TestNewEnforcer1(t *testing.T) {
 	t.Log(err)
 	t.Log(enforcer)
 }
+
+func TestEnforcer_JsonAdapter(t *testing.T) {
+	enforcer, err := NewEnforcer(persist.NewJsonAdapter(), config.DefaultTokenConfig())
+	if err != nil {
+		t.Fatalf("NewEnforcer() failed: %v", err)
+	}
+	newSession := model.NewSession("1", "2", "3")
+	newSession.AddTokenSign(&model.TokenSign{
+		Value:  "2",
+		Device: "device",
+	})
+	newSession.AddTokenSign(&model.TokenSign{
+		Value:  "3",
+		Device: "device",
+	})
+
+	t.Log(newSession.Json())
+	println(newSession.TokenSignSize())
+
+	err = enforcer.SetSession("1", newSession, 565)
+	if err != nil {
+		t.Errorf("SetSession() failed: %v", err)
+	}
+	session := enforcer.GetSession("1")
+	if id := session.Id; id != "1" {
+		t.Errorf("GetSession() failed")
+	}
+	if num := len(session.TokenSignList); num != 2 {
+		t.Fatalf("unexpected session tokenSignList length = %v", num)
+	}
+
+	err = enforcer.updateSession("1", model.NewSession("4", "5", "6"))
+	if err != nil {
+		t.Errorf("updateSession() failed: %v", err)
+	}
+	session = enforcer.GetSession("1")
+	if id := session.Id; id != "4" {
+		t.Errorf("GetSession() failed")
+	}
+
+}
