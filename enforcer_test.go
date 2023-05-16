@@ -190,7 +190,7 @@ func TestEnforcer_Login(t *testing.T) {
 		t.Errorf("Replaced() failed: %v", err)
 	}
 	session := enforcer.GetSession("1")
-	t.Logf("id = %v  session.tokenSign len = %v", "1", session.TokenSignList.Len())
+	t.Logf("id = %v  session.tokenSign len = %v", "1", session.TokenSignSize())
 
 	err = enforcer.CheckLogin(ctx)
 	if err == nil {
@@ -307,8 +307,8 @@ func TestEnforcerNotConcurrentNotShareLogin(t *testing.T) {
 		}
 	}
 	session := enforcer.GetSession("id")
-	if session.TokenSignList.Len() != 1 {
-		t.Errorf("Login() failed: unexpected session.TokenSignList length = %v", session.TokenSignList.Len())
+	if session.TokenSignSize() != 1 {
+		t.Errorf("Login() failed: unexpected session.TokenSignList length = %v", session.TokenSignSize())
 	}
 
 }
@@ -327,8 +327,10 @@ func TestEnforcer_ConcurrentShare(t *testing.T) {
 		}
 	}
 	session := enforcer.GetSession("id")
-	if session.TokenSignList.Len() != 1 {
-		t.Errorf("Login() failed: unexpected session.TokenSignList length = %v", session.TokenSignList.Len())
+	t.Logf("Login(): session.TokenSignList length = %v", session.TokenSignSize())
+
+	if session.TokenSignSize() != 1 {
+		t.Errorf("Login() failed: unexpected session.TokenSignList length = %v", session.TokenSignSize())
 	}
 
 }
@@ -346,8 +348,8 @@ func TestEnforcer_ConcurrentNotShareMultiLogin(t *testing.T) {
 		}
 	}
 	session := enforcer.GetSession("id")
-	if session.TokenSignList.Len() != 12 {
-		t.Errorf("Login() failed: unexpected session.TokenSignList length = %v", session.TokenSignList.Len())
+	if session.TokenSignSize() != 12 {
+		t.Errorf("Login() failed: unexpected session.TokenSignList length = %v", session.TokenSignSize())
 	}
 
 }

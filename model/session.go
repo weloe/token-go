@@ -2,6 +2,7 @@ package model
 
 import (
 	"container/list"
+	"encoding/json"
 	"sync"
 	"time"
 )
@@ -19,7 +20,7 @@ type Session struct {
 	Token         string
 	CreateTime    int64
 	DataMap       *sync.Map
-	TokenSignList *list.List
+	TokenSignList []*TokenSign `json:"TokenSignList"`
 }
 
 func DefaultSession(id string) *Session {
@@ -35,7 +36,7 @@ func NewSession(id string, sessionType string, loginId string) *Session {
 		Type:          sessionType,
 		LoginId:       loginId,
 		CreateTime:    time.Now().UnixMilli(),
-		TokenSignList: list.New(),
+		TokenSignList: make([]*TokenSign, 0),
 	}
 }
 
@@ -45,8 +46,8 @@ func (s *Session) GetFilterTokenSign(device string) *list.List {
 		return s.GetTokenSignListCopy()
 	}
 	copyList := list.New()
-	for e := s.TokenSignList.Front(); e != nil; e = e.Next() {
-		if tokenSign, ok := e.Value.(*TokenSign); ok && tokenSign.Device == device {
+	for _, tokenSign := range s.TokenSignList {
+		if tokenSign.Device == device {
 			copyList.PushBack(tokenSign)
 		}
 	}
@@ -56,8 +57,8 @@ func (s *Session) GetFilterTokenSign(device string) *list.List {
 // GetTokenSignListCopy find all TokenSign
 func (s *Session) GetTokenSignListCopy() *list.List {
 	copyList := list.New()
-	for e := s.TokenSignList.Front(); e != nil; e = e.Next() {
-		copyList.PushBack(e.Value)
+	for _, tokenSign := range s.TokenSignList {
+		copyList.PushBack(tokenSign)
 	}
 	return copyList
 }
@@ -67,8 +68,8 @@ func (s *Session) GetTokenSign(tokenValue string) *TokenSign {
 	if tokenValue == "" {
 		return nil
 	}
-	for e := s.TokenSignList.Front(); e != nil; e = e.Next() {
-		if tokenSign, ok := e.Value.(*TokenSign); ok && tokenSign.Value == tokenValue {
+	for _, tokenSign := range s.TokenSignList {
+		if tokenSign.Value == tokenValue {
 			return tokenSign
 		}
 	}
@@ -80,7 +81,7 @@ func (s *Session) AddTokenSign(sign *TokenSign) {
 	if s.GetTokenSign(sign.Value) != nil {
 		return
 	}
-	s.TokenSignList.PushBack(sign)
+	s.TokenSignList = append(s.TokenSignList, sign)
 }
 
 // RemoveTokenSign remove TokenSign by TokenSign.Value
@@ -88,12 +89,18 @@ func (s *Session) RemoveTokenSign(tokenValue string) bool {
 	if tokenValue == "" {
 		return false
 	}
-	for e := s.TokenSignList.Front(); e != nil; e = e.Next() {
-		if tokenSign, ok := e.Value.(*TokenSign); ok && tokenSign.Value == tokenValue {
-			s.TokenSignList.Remove(e)
+	for i, tokenSign := range s.TokenSignList {
+		if tokenSign.Value == tokenValue {
+			// delete
+			s.RemoveTokenSignByIndex(i)
+			return true
 		}
 	}
 	return true
+}
+
+func (s *Session) RemoveTokenSignByIndex(i int) {
+	s.TokenSignList = append(s.TokenSignList[:i], s.TokenSignList[i+1:]...)
 }
 
 // GetLastTokenByDevice get TokenSign.Value by device
@@ -106,4 +113,18 @@ func (s *Session) GetLastTokenByDevice(device string) string {
 		return tokenSign.Value
 	}
 	return ""
+}
+
+// TokenSignSize get tokenSign size
+func (s *Session) TokenSignSize() int {
+	return len(s.TokenSignList)
+}
+
+// Json return json string
+func (s *Session) Json() string {
+	b, err := json.Marshal(s)
+	if err != nil {
+		return ""
+	}
+	return string(b)
 }

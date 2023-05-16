@@ -214,22 +214,24 @@ func (e *Enforcer) LoginByModel(id string, loginModel *model.Login, ctx ctx.Cont
 		if tokenConfig.MaxLoginCount != -1 {
 			if session = e.GetSession(id); session != nil {
 				// logout account until loginCount == maxLoginCount if loginCount > maxLoginCount
-				for element, i := session.TokenSignList.Front(), 0; element != nil && i < session.TokenSignList.Len()-int(tokenConfig.MaxLoginCount); element, i = element.Next(), i+1 {
-					tokenSign := element.Value.(*model.TokenSign)
-					// delete tokenSign
-					session.RemoveTokenSign(tokenSign.Value)
-					err = e.updateSession(id, session)
-					if err != nil {
-						return "", err
-					}
-					// delete token-id
-					err = e.adapter.Delete(e.spliceTokenKey(tokenSign.Value))
-					if err != nil {
-						return "", err
+				for _, tokenSign := range session.TokenSignList {
+					if session.TokenSignSize() > int(tokenConfig.MaxLoginCount) {
+						// delete tokenSign
+						session.RemoveTokenSign(tokenSign.Value)
+						err = e.updateSession(id, session)
+						if err != nil {
+							return "", err
+						}
+						// delete token-id
+						err = e.adapter.Delete(e.spliceTokenKey(tokenSign.Value))
+						if err != nil {
+							return "", err
+						}
 					}
 				}
+
 				// check TokenSignList length, if length == 0, delete this session
-				if session != nil && session.TokenSignList.Len() == 0 {
+				if session != nil && session.TokenSignSize() == 0 {
 					err = e.deleteSession(id)
 					if err != nil {
 						return "", err
@@ -306,8 +308,7 @@ func (e *Enforcer) IsLoginById(id string) (bool, error) {
 	session := e.GetSession(id)
 	if session != nil {
 		l := session.TokenSignList
-		for element := l.Back(); element != nil; element = element.Prev() {
-			tokenSign := element.Value.(*model.TokenSign)
+		for _, tokenSign := range l {
 			str := e.adapter.GetStr(e.spliceTokenKey(tokenSign.Value))
 			if str == "" {
 				continue
@@ -320,7 +321,6 @@ func (e *Enforcer) IsLoginById(id string) (bool, error) {
 			if value {
 				return true, nil
 			}
-
 		}
 	}
 
@@ -365,7 +365,7 @@ func (e *Enforcer) GetLoginId(ctx ctx.Context) (string, error) {
 
 func (e *Enforcer) GetLoginCount(id string) int {
 	if session := e.GetSession(id); session != nil {
-		return session.TokenSignList.Len()
+		return session.TokenSignSize()
 	}
 	return 0
 }
@@ -407,7 +407,7 @@ func (e *Enforcer) Kickout(id string, device string) error {
 
 	}
 	// check TokenSignList length, if length == 0, delete this session
-	if session != nil && session.TokenSignList.Len() == 0 {
+	if session != nil && session.TokenSignSize() == 0 {
 		err := e.deleteSession(id)
 		if err != nil {
 			return err
