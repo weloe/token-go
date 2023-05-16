@@ -93,6 +93,10 @@ func (e *Enforcer) logoutByToken(token string) error {
 	if session != nil {
 		// delete tokenSign
 		session.RemoveTokenSign(token)
+		err = e.updateSession(id, session)
+		if err != nil {
+			return err
+		}
 	}
 	// check TokenSignList length, if length == 0, delete this session
 	if session != nil && session.TokenSignList.Len() == 0 {

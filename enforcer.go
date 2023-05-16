@@ -218,6 +218,10 @@ func (e *Enforcer) LoginByModel(id string, loginModel *model.Login, ctx ctx.Cont
 					tokenSign := element.Value.(*model.TokenSign)
 					// delete tokenSign
 					session.RemoveTokenSign(tokenSign.Value)
+					err = e.updateSession(id, session)
+					if err != nil {
+						return "", err
+					}
 					// delete token-id
 					err = e.adapter.Delete(e.spliceTokenKey(tokenSign.Value))
 					if err != nil {
@@ -241,6 +245,7 @@ func (e *Enforcer) LoginByModel(id string, loginModel *model.Login, ctx ctx.Cont
 
 // Replaced replace other user
 func (e *Enforcer) Replaced(id string, device string) error {
+	var err error
 	if session := e.GetSession(id); session != nil {
 		// get by login device
 		tokenSignList := session.GetFilterTokenSign(device)
@@ -249,8 +254,12 @@ func (e *Enforcer) Replaced(id string, device string) error {
 			if tokenSign, ok := element.Value.(*model.TokenSign); ok {
 				elementV := tokenSign.Value
 				session.RemoveTokenSign(elementV)
+				err = e.updateSession(id, session)
+				if err != nil {
+					return err
+				}
 				// sign token replaced
-				err := e.adapter.UpdateStr(e.spliceTokenKey(elementV), strconv.Itoa(constant.BeReplaced))
+				err = e.adapter.UpdateStr(e.spliceTokenKey(elementV), strconv.Itoa(constant.BeReplaced))
 				if err != nil {
 					return err
 				}
@@ -264,7 +273,6 @@ func (e *Enforcer) Replaced(id string, device string) error {
 				}
 			}
 		}
-
 	}
 	return nil
 }
@@ -377,8 +385,12 @@ func (e *Enforcer) Kickout(id string, device string) error {
 			if tokenSign, ok := element.Value.(*model.TokenSign); ok {
 				elementV := tokenSign.Value
 				session.RemoveTokenSign(elementV)
+				err := e.updateSession(id, session)
+				if err != nil {
+					return err
+				}
 				// sign token kicked
-				err := e.adapter.UpdateStr(e.spliceTokenKey(elementV), strconv.Itoa(constant.BeKicked))
+				err = e.adapter.UpdateStr(e.spliceTokenKey(elementV), strconv.Itoa(constant.BeKicked))
 				if err != nil {
 					return err
 				}
