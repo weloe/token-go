@@ -47,8 +47,8 @@ func (e *Enforcer) createLoginToken(id string, loginModel *model.Login) (string,
 	return tokenValue, nil
 }
 
-// responseToken set token to cookie or header
-func (e *Enforcer) responseToken(tokenValue string, loginModel *model.Login, ctx ctx.Context) error {
+// ResponseToken set token to cookie or header
+func (e *Enforcer) ResponseToken(tokenValue string, loginModel *model.Login, ctx ctx.Context) error {
 	if ctx == nil {
 		return nil
 	}
@@ -80,7 +80,7 @@ func (e *Enforcer) responseToken(tokenValue string, loginModel *model.Login, ctx
 func (e *Enforcer) logoutByToken(token string) error {
 	var err error
 	// delete token-id
-	id := e.adapter.GetStr(e.spliceTokenKey(token))
+	id := e.GetIdByToken(token)
 	if id == "" {
 		return errors.New("not logged in")
 	}

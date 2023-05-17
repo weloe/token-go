@@ -26,6 +26,14 @@ type Enforcer struct {
 	authManager  interface{}
 }
 
+func (e *Enforcer) GetWatcher() persist.Watcher {
+	return e.watcher
+}
+
+func (e *Enforcer) GetLogger() log.Logger {
+	return e.logger
+}
+
 func NewDefaultAdapter() persist.Adapter {
 	return persist.NewDefaultAdapter()
 }
@@ -186,7 +194,7 @@ func (e *Enforcer) LoginByModel(id string, loginModel *model.Login, ctx ctx.Cont
 	}
 
 	// response token
-	err = e.responseToken(tokenValue, loginModel, ctx)
+	err = e.ResponseToken(tokenValue, loginModel, ctx)
 	if err != nil {
 		return "", err
 	}
@@ -309,7 +317,7 @@ func (e *Enforcer) IsLoginById(id string) (bool, error) {
 	if session != nil {
 		l := session.TokenSignList
 		for _, tokenSign := range l {
-			str := e.adapter.GetStr(e.spliceTokenKey(tokenSign.Value))
+			str := e.GetIdByToken(tokenSign.Value)
 			if str == "" {
 				continue
 			}
@@ -327,13 +335,17 @@ func (e *Enforcer) IsLoginById(id string) (bool, error) {
 	return false, error
 }
 
+func (e *Enforcer) GetIdByToken(token string) string {
+	return e.adapter.GetStr(e.spliceTokenKey(token))
+}
+
 // IsLogin check if user logged in by token.
 func (e *Enforcer) IsLogin(ctx ctx.Context) (bool, error) {
 	tokenValue := e.GetRequestToken(ctx)
 	if tokenValue == "" {
 		return false, nil
 	}
-	str := e.adapter.GetStr(e.spliceTokenKey(tokenValue))
+	str := e.GetIdByToken(tokenValue)
 	if str == "" {
 		return false, nil
 	}
@@ -351,7 +363,7 @@ func (e *Enforcer) CheckLogin(ctx ctx.Context) error {
 
 func (e *Enforcer) GetLoginId(ctx ctx.Context) (string, error) {
 	tokenValue := e.GetRequestToken(ctx)
-	str := e.adapter.GetStr(e.spliceTokenKey(tokenValue))
+	str := e.GetIdByToken(tokenValue)
 	if str == "" {
 		return "", errors.New("GetLoginId() failed: not logged in")
 	}
@@ -528,4 +540,8 @@ func (e *Enforcer) updateSession(id string, session *model.Session) error {
 		return err
 	}
 	return nil
+}
+
+func (e *Enforcer) GetTokenConfig() config.TokenConfig {
+	return e.config
 }

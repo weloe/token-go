@@ -1,6 +1,7 @@
 package token_go
 
 import (
+	"github.com/weloe/token-go/config"
 	"github.com/weloe/token-go/ctx"
 	"github.com/weloe/token-go/log"
 	"github.com/weloe/token-go/model"
@@ -16,6 +17,7 @@ type IEnforcer interface {
 	IsLogin(ctx ctx.Context) (bool, error)
 	IsLoginById(id string) (bool, error)
 	GetLoginId(ctx ctx.Context) (string, error)
+	GetIdByToken(token string) string
 	GetLoginCount(id string) int
 
 	Replaced(id string, device string) error
@@ -37,9 +39,12 @@ type IEnforcer interface {
 	GetAdapter() persist.Adapter
 	SetAdapter(adapter persist.Adapter)
 	SetWatcher(watcher persist.Watcher)
+	GetWatcher() persist.Watcher
 	SetLogger(logger log.Logger)
+	GetLogger() log.Logger
 	EnableLog()
 	IsLogEnable() bool
 	GetSession(id string) *model.Session
 	SetSession(id string, session *model.Session, timeout int64) error
+	GetTokenConfig() config.TokenConfig
 }
