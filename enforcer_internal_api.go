@@ -76,8 +76,8 @@ func (e *Enforcer) ResponseToken(tokenValue string, loginModel *model.Login, ctx
 	return nil
 }
 
-// logoutByToken clear token info
-func (e *Enforcer) logoutByToken(token string) error {
+// LogoutByToken clear token info
+func (e *Enforcer) LogoutByToken(token string) error {
 	var err error
 	// delete token-id
 	id := e.GetIdByToken(token)
@@ -142,4 +142,8 @@ func (e *Enforcer) spliceSessionKey(id string) string {
 // spliceTokenKey splice token-id key
 func (e *Enforcer) spliceTokenKey(id string) string {
 	return e.config.TokenName + ":" + e.loginType + ":token:" + id
+}
+
+func (e *Enforcer) SetJwtSecretKey(key string) {
+	e.config.JwtSecretKey = key
 }
