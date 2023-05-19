@@ -14,6 +14,7 @@ type IEnforcer interface {
 	Login(id string, ctx ctx.Context) (string, error)
 	LoginByModel(id string, loginModel *model.Login, ctx ctx.Context) (string, error)
 	Logout(ctx ctx.Context) error
+	LogoutByToken(token string) error
 	IsLogin(ctx ctx.Context) (bool, error)
 	IsLoginById(id string) (bool, error)
 	GetLoginId(ctx ctx.Context) (string, error)

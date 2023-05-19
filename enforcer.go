@@ -301,7 +301,7 @@ func (e *Enforcer) Logout(ctx ctx.Context) error {
 			tokenConfig.CookieConfig.Domain)
 	}
 
-	err := e.logoutByToken(token)
+	err := e.LogoutByToken(token)
 
 	if err != nil {
 		return err
