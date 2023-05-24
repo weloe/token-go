@@ -419,3 +419,55 @@ func TestEnforcer_JsonAdapter(t *testing.T) {
 	}
 
 }
+
+func TestEnforcer_Banned(t *testing.T) {
+	err, enforcer, _ := NewTestEnforcer(t)
+	if err != nil {
+		t.Fatalf("NewTestEnforcer() failed: %v", err)
+	}
+	err = enforcer.Banned("1", "comment", 1, 100)
+	if err != nil {
+		t.Fatalf("Banned() failed: %v", err)
+	}
+	isBanned := enforcer.IsBanned("1", "comment")
+	if !isBanned {
+		t.Errorf("unexpected isBanned is false")
+	}
+	level, err := enforcer.GetBannedLevel("1", "comment")
+	if err != nil {
+		t.Errorf("GetBannedLevel() failed: %v", err)
+	}
+	if level != 1 {
+		t.Errorf("unexpected banned level = %v", level)
+	}
+
+	err = enforcer.UnBanned("1", "comment")
+	if err != nil {
+		t.Fatalf("UnBanned() failed: %v", err)
+	}
+	isBanned = enforcer.IsBanned("1", "comment")
+	if isBanned {
+		t.Errorf("unexpected isBanned is false")
+	}
+}
+
+func TestEnforcer_GetBannedTime(t *testing.T) {
+	err, enforcer, _ := NewTestEnforcer(t)
+	if err != nil {
+		t.Fatalf("NewTestEnforcer() failed: %v", err)
+	}
+	err = enforcer.Banned("1", "comment", 1, 100)
+	if err != nil {
+		t.Fatalf("Banned() failed: %v", err)
+	}
+
+	t.Logf("banned time = %v", enforcer.GetBannedTime("1", "comment"))
+
+	err = enforcer.Banned("1", "comment", 1, -1)
+	if err != nil {
+		t.Fatalf("Banned() failed: %v", err)
+	}
+
+	t.Logf("banned time = %v", enforcer.GetBannedTime("1", "comment"))
+
+}

@@ -342,6 +342,10 @@ func (e *Enforcer) GetIdByToken(token string) string {
 // IsLogin check if user logged in by token.
 func (e *Enforcer) IsLogin(ctx ctx.Context) (bool, error) {
 	tokenValue := e.GetRequestToken(ctx)
+	return e.IsLoginByToken(tokenValue)
+}
+
+func (e *Enforcer) IsLoginByToken(tokenValue string) (bool, error) {
 	if tokenValue == "" {
 		return false, nil
 	}
@@ -382,8 +386,74 @@ func (e *Enforcer) GetLoginCount(id string) int {
 	return 0
 }
 
-func (e *Enforcer) Banned(id string, service string) error {
-	panic("implement me ...")
+// Banned ban user, if time == 0,the timeout is not set
+func (e *Enforcer) Banned(id string, service string, level int, time int64) error {
+	if id == "" || service == "" {
+		return fmt.Errorf("parameter cannot be nil")
+	}
+	if level < 1 {
+		return fmt.Errorf("unexpected level = %v, level must large or equal 1", level)
+	}
+	err := e.adapter.SetStr(e.spliceBannedKey(id, service), strconv.Itoa(level), time)
+	if err != nil {
+		return err
+	}
+
+	// callback
+	e.logger.Ban(e.loginType, id, service, level, time)
+	if e.watcher != nil {
+		e.watcher.Ban(e.loginType, id, service, level, time)
+	}
+
+	return nil
+}
+
+// UnBanned Unblock user account
+func (e *Enforcer) UnBanned(id string, services ...string) error {
+	if id == "" {
+		return fmt.Errorf("parmeter id can not be nil")
+	}
+	if len(services) == 0 {
+		return fmt.Errorf("parmeter services length can not be 0")
+	}
+
+	for _, service := range services {
+		err := e.adapter.DeleteStr(e.spliceBannedKey(id, service))
+		if err != nil {
+			return err
+		}
+		e.logger.UnBan(e.loginType, id, service)
+		if e.watcher != nil {
+			e.watcher.UnBan(e.loginType, id, service)
+		}
+	}
+	return nil
+}
+
+// IsBanned if banned return true, else return false
+func (e *Enforcer) IsBanned(id string, services string) bool {
+	s := e.adapter.GetStr(e.spliceBannedKey(id, services))
+
+	return s != ""
+}
+
+// GetBannedLevel get banned level
+func (e *Enforcer) GetBannedLevel(id string, service string) (int64, error) {
+	str := e.adapter.GetStr(e.spliceBannedKey(id, service))
+	if str == "" {
+		return 0, fmt.Errorf("loginId = %v, service = %v is not banned", id, service)
+	}
+	time, err := strconv.ParseInt(str, 10, 64)
+	if err != nil {
+		return 0, err
+	}
+	return time, nil
+}
+
+// GetBannedTime get banned time
+func (e *Enforcer) GetBannedTime(id string, service string) int64 {
+	timeout := e.adapter.GetStrTimeout(e.spliceBannedKey(id, service))
+	return timeout
 }
 
 // Kickout kickout user

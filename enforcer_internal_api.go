@@ -144,6 +144,10 @@ func (e *Enforcer) spliceTokenKey(id string) string {
 	return e.config.TokenName + ":" + e.loginType + ":token:" + id
 }
 
+func (e *Enforcer) spliceBannedKey(id string, service string) string {
+	return e.config.TokenName + ":" + e.loginType + ":ban:" + service + ":" + id
+}
+
 func (e *Enforcer) SetJwtSecretKey(key string) {
 	e.config.JwtSecretKey = key
 }

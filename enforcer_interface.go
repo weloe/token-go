@@ -16,14 +16,20 @@ type IEnforcer interface {
 	Logout(ctx ctx.Context) error
 	LogoutByToken(token string) error
 	IsLogin(ctx ctx.Context) (bool, error)
+	IsLoginByToken(token string) (bool, error)
 	IsLoginById(id string) (bool, error)
 	GetLoginId(ctx ctx.Context) (string, error)
 	GetIdByToken(token string) string
 	GetLoginCount(id string) int
 
 	Replaced(id string, device string) error
-	// Banned TODO
-	Banned(id string, service string) error
+	// Banned banned api
+	Banned(id string, service string, level int, time int64) error
+	UnBanned(id string, services ...string) error
+	IsBanned(id string, service string) bool
+	GetBannedLevel(id string, service string) (int64, error)
+	GetBannedTime(id string, service string) int64
+
 	Kickout(id string, device string) error
 
 	GetRequestToken(ctx ctx.Context) string

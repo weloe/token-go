@@ -13,7 +13,7 @@ type Watcher interface {
 	// Replace called when Someone else has taken over your account
 	Replace(loginType string, id interface{}, tokenValue string)
 	// Ban called when account banned
-	Ban(loginType string, id interface{}, service string)
+	Ban(loginType string, id interface{}, service string, level int, time int64)
 	// UnBan called when account has been unbanned.
 	UnBan(loginType string, id interface{}, service string)
 	// RefreshToken called when renew token timeout

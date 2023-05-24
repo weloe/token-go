@@ -53,11 +53,11 @@ func (d *DefaultLogger) Replace(loginType string, id interface{}, tokenValue str
 	log.Printf("Replaced: loginId = %v, loginType = %v, tokenValue = %v", id, loginType, tokenValue)
 }
 
-func (d *DefaultLogger) Ban(loginType string, id interface{}, service string) {
+func (d *DefaultLogger) Ban(loginType string, id interface{}, service string, level int, time int64) {
 	if !d.enable {
 		return
 	}
-	log.Printf("Banned: loginId = %v, loginType = %v, service = %v", id, loginType, service)
+	log.Printf("Banned: loginId = %v, loginType = %v, service = %v, level = %v, time = %v", id, loginType, service, level, time)
 }
 
 func (d *DefaultLogger) UnBan(loginType string, id interface{}, service string) {

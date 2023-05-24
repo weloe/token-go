@@ -49,10 +49,6 @@ type TokenConfig struct {
 	CookieConfig *CookieConfig
 }
 
-func (t *TokenConfig) SetJwtSecretKey(secretKey string) {
-	t.JwtSecretKey = secretKey
-}
-
 func DefaultTokenConfig() *TokenConfig {
 	return &TokenConfig{
 		TokenStyle:             "uuid",
