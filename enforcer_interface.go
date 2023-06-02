@@ -11,9 +11,12 @@ import (
 var _ IEnforcer = &Enforcer{}
 
 type IEnforcer interface {
+	// Login login api
 	Login(id string, ctx ctx.Context) (string, error)
+	LoginById(id string) (string, error)
 	LoginByModel(id string, loginModel *model.Login, ctx ctx.Context) (string, error)
 	Logout(ctx ctx.Context) error
+	LogoutById(id string) error
 	LogoutByToken(token string) error
 	IsLogin(ctx ctx.Context) (bool, error)
 	IsLoginByToken(token string) (bool, error)
@@ -52,6 +55,7 @@ type IEnforcer interface {
 	EnableLog()
 	IsLogEnable() bool
 	GetSession(id string) *model.Session
+	UpdateSession(id string, session *model.Session) error
 	SetSession(id string, session *model.Session, timeout int64) error
 	GetTokenConfig() config.TokenConfig
 }

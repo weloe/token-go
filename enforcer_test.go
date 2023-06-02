@@ -409,9 +409,9 @@ func TestEnforcer_JsonAdapter(t *testing.T) {
 		t.Fatalf("unexpected session tokenSignList length = %v", num)
 	}
 
-	err = enforcer.updateSession("1", model.NewSession("4", "5", "6"))
+	err = enforcer.UpdateSession("1", model.NewSession("4", "5", "6"))
 	if err != nil {
-		t.Errorf("updateSession() failed: %v", err)
+		t.Errorf("UpdateSession() failed: %v", err)
 	}
 	session = enforcer.GetSession("1")
 	if id := session.Id; id != "4" {

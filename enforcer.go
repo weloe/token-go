@@ -155,6 +155,10 @@ func (e *Enforcer) Login(id string, ctx ctx.Context) (string, error) {
 	return e.LoginByModel(id, model.DefaultLoginModel(), ctx)
 }
 
+func (e *Enforcer) LoginById(id string) (string, error) {
+	return e.Login(id, nil)
+}
+
 // LoginByModel login by id and loginModel, return tokenValue and error
 func (e *Enforcer) LoginByModel(id string, loginModel *model.Login, ctx ctx.Context) (string, error) {
 	if loginModel == nil {
@@ -226,7 +230,7 @@ func (e *Enforcer) LoginByModel(id string, loginModel *model.Login, ctx ctx.Cont
 					if session.TokenSignSize() > int(tokenConfig.MaxLoginCount) {
 						// delete tokenSign
 						session.RemoveTokenSign(tokenSign.Value)
-						err = e.updateSession(id, session)
+						err = e.UpdateSession(id, session)
 						if err != nil {
 							return "", err
 						}
@@ -264,7 +268,7 @@ func (e *Enforcer) Replaced(id string, device string) error {
 			if tokenSign, ok := element.Value.(*model.TokenSign); ok {
 				elementV := tokenSign.Value
 				session.RemoveTokenSign(elementV)
-				err = e.updateSession(id, session)
+				err = e.UpdateSession(id, session)
 				if err != nil {
 					return err
 				}
@@ -305,6 +309,20 @@ func (e *Enforcer) Logout(ctx ctx.Context) error {
 
 	if err != nil {
 		return err
+	}
+	return nil
+}
+
+// LogoutById force user to logout
+func (e *Enforcer) LogoutById(id string) error {
+	session := e.GetSession(id)
+	if session != nil {
+		for _, tokenSign := range session.TokenSignList {
+			err := e.LogoutByToken(tokenSign.Value)
+			if err != nil {
+				return err
+			}
+		}
 	}
 	return nil
 }
@@ -467,7 +485,7 @@ func (e *Enforcer) Kickout(id string, device string) error {
 			if tokenSign, ok := element.Value.(*model.TokenSign); ok {
 				elementV := tokenSign.Value
 				session.RemoveTokenSign(elementV)
-				err := e.updateSession(id, session)
+				err := e.UpdateSession(id, session)
 				if err != nil {
 					return err
 				}
@@ -596,7 +614,7 @@ func (e *Enforcer) deleteSession(id string) error {
 	return nil
 }
 
-func (e *Enforcer) updateSession(id string, session *model.Session) error {
+func (e *Enforcer) UpdateSession(id string, session *model.Session) error {
 	bytes, err := e.sessionSerialize(session)
 	if err != nil {
 		return err

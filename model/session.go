@@ -25,8 +25,9 @@ type Session struct {
 
 func DefaultSession(id string) *Session {
 	return &Session{
-		Id:         id,
-		CreateTime: time.Now().UnixMilli(),
+		Id:            id,
+		CreateTime:    time.Now().UnixMilli(),
+		TokenSignList: make([]*TokenSign, 0),
 	}
 }
 
@@ -99,6 +100,7 @@ func (s *Session) RemoveTokenSign(tokenValue string) bool {
 	return true
 }
 
+// RemoveTokenSignByIndex delete by index
 func (s *Session) RemoveTokenSignByIndex(i int) {
 	s.TokenSignList = append(s.TokenSignList[:i], s.TokenSignList[i+1:]...)
 }
@@ -127,4 +129,16 @@ func (s *Session) Json() string {
 		return ""
 	}
 	return string(b)
+}
+
+func (s *Session) Get(key string) interface{} {
+	value, ok := s.DataMap.Load(key)
+	if !ok {
+		return nil
+	}
+	return value
+}
+
+func (s *Session) Set(key string, obj interface{}) {
+	s.DataMap.Store(key, obj)
 }

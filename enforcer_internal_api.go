@@ -93,7 +93,7 @@ func (e *Enforcer) LogoutByToken(token string) error {
 	if session != nil {
 		// delete tokenSign
 		session.RemoveTokenSign(token)
-		err = e.updateSession(id, session)
+		err = e.UpdateSession(id, session)
 		if err != nil {
 			return err
 		}
