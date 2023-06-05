@@ -39,6 +39,19 @@ func (d *HttpRequest) Url() string {
 	return d.source.URL.String()
 }
 
+func (d *HttpRequest) UrlNoQuery() string {
+	var scheme string
+	if d.source.URL.Scheme != "" {
+		scheme = d.source.URL.Scheme
+	}
+	if d.source.TLS != nil {
+		scheme = "https"
+	} else {
+		scheme = "http"
+	}
+	return scheme + "://" + d.source.Host + d.source.URL.Path
+}
+
 func (d *HttpRequest) Method() string {
 	return d.source.Method
 }

@@ -253,6 +253,13 @@ func TestHttpRequest_Url(t *testing.T) {
 	}
 }
 
+func TestHttpRequest_UrlNoQuery(t *testing.T) {
+	s := NewTestHttpRequest(t).UrlNoQuery()
+	if s != "https://baidu.com/api/" {
+		t.Errorf("Url() = %s ,want https://baidu.com/api/", s)
+	}
+}
+
 func TestHttpResponse_SetHeader(t *testing.T) {
 	req, _ := http.NewRequest(http.MethodGet, "/", nil)
 	w := httptest.NewRecorder()
