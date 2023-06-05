@@ -44,10 +44,12 @@ func (d *HttpRequest) UrlNoQuery() string {
 	if d.source.URL.Scheme != "" {
 		scheme = d.source.URL.Scheme
 	}
-	if d.source.TLS != nil {
-		scheme = "https"
-	} else {
-		scheme = "http"
+	if scheme == "" {
+		if d.source.TLS != nil {
+			scheme = "https"
+		} else {
+			scheme = "http"
+		}
 	}
 	return scheme + "://" + d.source.Host + d.source.URL.Path
 }

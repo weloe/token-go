@@ -16,7 +16,7 @@ const (
 )
 
 const (
-	TokenName = "TokenGo"
+	TokenName = "Tokengo"
 )
 
 const (

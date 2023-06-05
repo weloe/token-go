@@ -54,12 +54,18 @@ func (r *HttpResponse) DeleteCookie(name string, path string, domain string) {
 }
 
 func (r *HttpResponse) AddCookie(name string, value string, path string, domain string, timeout int64) {
+	var expiration time.Time
+	if timeout == -1 {
+		expiration = time.Unix(0, 0)
+	} else {
+		expiration = time.Now().Add(time.Second * time.Duration(timeout))
+	}
 	cookie := http.Cookie{
 		Name:    name,
 		Value:   value,
 		Path:    path,
 		Domain:  domain,
-		Expires: time.Now().Add(time.Second * time.Duration(timeout)),
+		Expires: expiration,
 	}
 	r.AddHeader(constant.SetCookie, cookie.String())
 }

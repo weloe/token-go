@@ -5,6 +5,7 @@ import (
 	"github.com/weloe/token-go/constant"
 	"github.com/weloe/token-go/ctx"
 	"github.com/weloe/token-go/model"
+	"math"
 	"strconv"
 )
 
@@ -56,10 +57,20 @@ func (e *Enforcer) ResponseToken(tokenValue string, loginModel *model.Login, ctx
 
 	// set token to cookie
 	if tokenConfig.IsReadCookie {
-		cookieTimeout := tokenConfig.Timeout
-		if loginModel.IsLastingCookie {
+		var cookieTimeout int64
+		if !loginModel.IsLastingCookie {
 			cookieTimeout = -1
+		} else {
+			if loginModel.Timeout != 0 {
+				cookieTimeout = loginModel.Timeout
+			} else {
+				cookieTimeout = tokenConfig.Timeout
+			}
+			if cookieTimeout == constant.NeverExpire {
+				cookieTimeout = math.MaxInt64
+			}
 		}
+
 		// add cookie use tokenConfig.CookieConfig
 		ctx.Response().AddCookie(tokenConfig.TokenName,
 			tokenValue,
@@ -71,6 +82,7 @@ func (e *Enforcer) ResponseToken(tokenValue string, loginModel *model.Login, ctx
 	// set token to header
 	if loginModel.IsWriteHeader {
 		ctx.Response().SetHeader(tokenConfig.TokenName, tokenValue)
+		ctx.Response().AddHeader(constant.AccessControlExposeHeaders, tokenConfig.TokenName)
 	}
 
 	return nil
