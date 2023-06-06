@@ -3,47 +3,45 @@ package model
 import (
 	"container/list"
 	"encoding/json"
+	"fmt"
+	"sync"
 	"time"
 )
 
-type TokenSign struct {
-	Value  string
-	Device string
-}
-
-type Session struct {
+// SyncSession sync SyncSession
+type SyncSession struct {
 	Id            string
 	Type          string
 	LoginType     string
 	LoginId       string
 	Token         string
 	CreateTime    int64
-	DataMap       map[string]interface{}
+	DataMap       *sync.Map
 	TokenSignList []*TokenSign `json:"TokenSignList"`
 }
 
-func DefaultSession(id string) *Session {
-	return &Session{
+func DefaultSyncSession(id string) *SyncSession {
+	return &SyncSession{
 		Id:            id,
-		DataMap:       make(map[string]interface{}),
+		DataMap:       &sync.Map{},
 		CreateTime:    time.Now().UnixMilli(),
 		TokenSignList: make([]*TokenSign, 0),
 	}
 }
 
-func NewSession(id string, sessionType string, loginId string) *Session {
-	return &Session{
+func NewSyncSession(id string, sessionType string, loginId string) *SyncSession {
+	return &SyncSession{
 		Id:            id,
 		Type:          sessionType,
 		LoginId:       loginId,
 		CreateTime:    time.Now().UnixMilli(),
-		DataMap:       make(map[string]interface{}),
+		DataMap:       &sync.Map{},
 		TokenSignList: make([]*TokenSign, 0),
 	}
 }
 
 // GetFilterTokenSign filter by TokenSign.Device from all TokenSign
-func (s *Session) GetFilterTokenSign(device string) *list.List {
+func (s *SyncSession) GetFilterTokenSign(device string) *list.List {
 	if device == "" {
 		return s.GetTokenSignListCopy()
 	}
@@ -57,7 +55,7 @@ func (s *Session) GetFilterTokenSign(device string) *list.List {
 }
 
 // GetTokenSignListCopy find all TokenSign
-func (s *Session) GetTokenSignListCopy() *list.List {
+func (s *SyncSession) GetTokenSignListCopy() *list.List {
 	copyList := list.New()
 	for _, tokenSign := range s.TokenSignList {
 		copyList.PushBack(tokenSign)
@@ -66,7 +64,7 @@ func (s *Session) GetTokenSignListCopy() *list.List {
 }
 
 // GetTokenSign find TokenSign by TokenSign.Value
-func (s *Session) GetTokenSign(tokenValue string) *TokenSign {
+func (s *SyncSession) GetTokenSign(tokenValue string) *TokenSign {
 	if tokenValue == "" {
 		return nil
 	}
@@ -79,7 +77,7 @@ func (s *Session) GetTokenSign(tokenValue string) *TokenSign {
 }
 
 // AddTokenSign add TokenSign
-func (s *Session) AddTokenSign(sign *TokenSign) {
+func (s *SyncSession) AddTokenSign(sign *TokenSign) {
 	if s.GetTokenSign(sign.Value) != nil {
 		return
 	}
@@ -87,7 +85,7 @@ func (s *Session) AddTokenSign(sign *TokenSign) {
 }
 
 // RemoveTokenSign remove TokenSign by TokenSign.Value
-func (s *Session) RemoveTokenSign(tokenValue string) bool {
+func (s *SyncSession) RemoveTokenSign(tokenValue string) bool {
 	if tokenValue == "" {
 		return false
 	}
@@ -102,12 +100,12 @@ func (s *Session) RemoveTokenSign(tokenValue string) bool {
 }
 
 // RemoveTokenSignByIndex delete by index
-func (s *Session) RemoveTokenSignByIndex(i int) {
+func (s *SyncSession) RemoveTokenSignByIndex(i int) {
 	s.TokenSignList = append(s.TokenSignList[:i], s.TokenSignList[i+1:]...)
 }
 
 // GetLastTokenByDevice get TokenSign.Value by device
-func (s *Session) GetLastTokenByDevice(device string) string {
+func (s *SyncSession) GetLastTokenByDevice(device string) string {
 	if device == "" {
 		return ""
 	}
@@ -119,40 +117,61 @@ func (s *Session) GetLastTokenByDevice(device string) string {
 }
 
 // TokenSignSize get tokenSign size
-func (s *Session) TokenSignSize() int {
+func (s *SyncSession) TokenSignSize() int {
 	return len(s.TokenSignList)
 }
 
 // Json return json string
-func (s *Session) Json() string {
-	b, err := json.Marshal(s)
+func (s *SyncSession) Json() string {
+	myStruct := &Session{
+		Id:            s.Id,
+		Type:          s.Type,
+		LoginType:     s.LoginType,
+		LoginId:       s.LoginId,
+		Token:         s.Token,
+		CreateTime:    s.CreateTime,
+		TokenSignList: s.TokenSignList,
+		DataMap:       make(map[string]interface{}),
+	}
+
+	s.DataMap.Range(func(key, value any) bool {
+		myStruct.DataMap[fmt.Sprintf("%v", key)] = value
+		return true
+	})
+
+	b, err := json.Marshal(myStruct)
 	if err != nil {
 		return ""
 	}
 	return string(b)
 }
 
+// UnmarshalBytes convert bytes to SyncSession
+func (s *SyncSession) UnmarshalBytes(jsonByte []byte) (*SyncSession, error) {
+	return JsonByteToSyncSession(jsonByte)
+}
+
+// UnmarshalStr convert string to SyncSession
+func (s *SyncSession) UnmarshalStr(jsonStr string) (*SyncSession, error) {
+	return JsonToSyncSession(jsonStr)
+}
+
 // Get returns data from DataMap
-func (s *Session) Get(key string) interface{} {
-	value, ok := s.DataMap[key]
+func (s *SyncSession) Get(key string) interface{} {
+	value, ok := s.DataMap.Load(key)
 	if !ok {
 		return nil
 	}
 	return value
 }
 
-func (s *Session) Set(key string, obj interface{}) {
-	s.DataMap[key] = obj
+func (s *SyncSession) Set(key string, obj interface{}) {
+	s.DataMap.Store(key, obj)
 }
 
 // GetOrSet returns the existing value for the key if present.
 // Otherwise, it stores and returns the given value.
 // The loaded result is true if the value was loaded, false if stored.
-func (s *Session) GetOrSet(key string, obj interface{}) (interface{}, bool) {
-	value := s.Get(key)
-	if value == nil {
-		s.Set(key, obj)
-		return obj, false
-	}
-	return value, true
+func (s *SyncSession) GetOrSet(key string, obj interface{}) (interface{}, bool) {
+	return s.DataMap.LoadOrStore(key, obj)
 }
