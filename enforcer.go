@@ -26,14 +26,6 @@ type Enforcer struct {
 	authManager  interface{}
 }
 
-func (e *Enforcer) GetWatcher() persist.Watcher {
-	return e.watcher
-}
-
-func (e *Enforcer) GetLogger() log.Logger {
-	return e.logger
-}
-
 func NewDefaultAdapter() persist.Adapter {
 	return persist.NewDefaultAdapter()
 }
@@ -134,8 +126,16 @@ func (e *Enforcer) SetAdapter(adapter persist.Adapter) {
 	e.adapter = adapter
 }
 
+func (e *Enforcer) GetWatcher() persist.Watcher {
+	return e.watcher
+}
+
 func (e *Enforcer) SetWatcher(watcher persist.Watcher) {
 	e.watcher = watcher
+}
+
+func (e *Enforcer) GetLogger() log.Logger {
+	return e.logger
 }
 
 func (e *Enforcer) SetLogger(logger log.Logger) {
@@ -198,7 +198,7 @@ func (e *Enforcer) LoginByModel(id string, loginModel *model.Login, ctx ctx.Cont
 	}
 
 	// response token
-	err = e.ResponseToken(tokenValue, loginModel, ctx)
+	err = e.responseToken(tokenValue, loginModel, ctx)
 	if err != nil {
 		return "", err
 	}
@@ -244,7 +244,7 @@ func (e *Enforcer) LoginByModel(id string, loginModel *model.Login, ctx ctx.Cont
 
 				// check TokenSignList length, if length == 0, delete this session
 				if session != nil && session.TokenSignSize() == 0 {
-					err = e.deleteSession(id)
+					err = e.DeleteSession(id)
 					if err != nil {
 						return "", err
 					}
@@ -324,6 +324,45 @@ func (e *Enforcer) LogoutById(id string) error {
 			}
 		}
 	}
+	return nil
+}
+
+// LogoutByToken clear token info
+func (e *Enforcer) LogoutByToken(token string) error {
+	var err error
+	// delete token-id
+	id := e.GetIdByToken(token)
+	if id == "" {
+		return errors.New("not logged in")
+	}
+	// delete token-id
+	err = e.adapter.Delete(e.spliceTokenKey(token))
+	if err != nil {
+		return err
+	}
+	session := e.GetSession(id)
+	if session != nil {
+		// delete tokenSign
+		session.RemoveTokenSign(token)
+		err = e.UpdateSession(id, session)
+		if err != nil {
+			return err
+		}
+	}
+	// check TokenSignList length, if length == 0, delete this session
+	if session != nil && session.TokenSignSize() == 0 {
+		err = e.DeleteSession(id)
+		if err != nil {
+			return err
+		}
+	}
+
+	e.logger.Logout(e.loginType, id, token)
+
+	if e.watcher != nil {
+		e.watcher.Logout(e.loginType, id, token)
+	}
+
 	return nil
 }
 
@@ -508,7 +547,7 @@ func (e *Enforcer) Kickout(id string, device string) error {
 	}
 	// check TokenSignList length, if length == 0, delete this session
 	if session != nil && session.TokenSignSize() == 0 {
-		err := e.deleteSession(id)
+		err := e.DeleteSession(id)
 		if err != nil {
 			return err
 		}
@@ -606,7 +645,7 @@ func (e *Enforcer) SetSession(id string, session *model.Session, timeout int64) 
 	return nil
 }
 
-func (e *Enforcer) deleteSession(id string) error {
+func (e *Enforcer) DeleteSession(id string) error {
 	err := e.adapter.Delete(e.spliceSessionKey(id))
 	if err != nil {
 		return err

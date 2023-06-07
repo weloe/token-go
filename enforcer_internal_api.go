@@ -49,7 +49,7 @@ func (e *Enforcer) createLoginToken(id string, loginModel *model.Login) (string,
 }
 
 // ResponseToken set token to cookie or header
-func (e *Enforcer) ResponseToken(tokenValue string, loginModel *model.Login, ctx ctx.Context) error {
+func (e *Enforcer) responseToken(tokenValue string, loginModel *model.Login, ctx ctx.Context) error {
 	if ctx == nil {
 		return nil
 	}
@@ -83,45 +83,6 @@ func (e *Enforcer) ResponseToken(tokenValue string, loginModel *model.Login, ctx
 	if loginModel.IsWriteHeader {
 		ctx.Response().SetHeader(tokenConfig.TokenName, tokenValue)
 		ctx.Response().AddHeader(constant.AccessControlExposeHeaders, tokenConfig.TokenName)
-	}
-
-	return nil
-}
-
-// LogoutByToken clear token info
-func (e *Enforcer) LogoutByToken(token string) error {
-	var err error
-	// delete token-id
-	id := e.GetIdByToken(token)
-	if id == "" {
-		return errors.New("not logged in")
-	}
-	// delete token-id
-	err = e.adapter.Delete(e.spliceTokenKey(token))
-	if err != nil {
-		return err
-	}
-	session := e.GetSession(id)
-	if session != nil {
-		// delete tokenSign
-		session.RemoveTokenSign(token)
-		err = e.UpdateSession(id, session)
-		if err != nil {
-			return err
-		}
-	}
-	// check TokenSignList length, if length == 0, delete this session
-	if session != nil && session.TokenSignSize() == 0 {
-		err = e.deleteSession(id)
-		if err != nil {
-			return err
-		}
-	}
-
-	e.logger.Logout(e.loginType, id, token)
-
-	if e.watcher != nil {
-		e.watcher.Logout(e.loginType, id, token)
 	}
 
 	return nil

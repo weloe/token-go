@@ -11,39 +11,7 @@ import (
 var _ IEnforcer = &Enforcer{}
 
 type IEnforcer interface {
-	// Login login api
-	Login(id string, ctx ctx.Context) (string, error)
-	LoginById(id string) (string, error)
-	LoginByModel(id string, loginModel *model.Login, ctx ctx.Context) (string, error)
-	Logout(ctx ctx.Context) error
-	LogoutById(id string) error
-	LogoutByToken(token string) error
-	IsLogin(ctx ctx.Context) (bool, error)
-	IsLoginByToken(token string) (bool, error)
-	IsLoginById(id string) (bool, error)
-	GetLoginId(ctx ctx.Context) (string, error)
-	GetIdByToken(token string) string
-	GetLoginCount(id string) int
-
-	Replaced(id string, device string) error
-	// Banned banned api
-	Banned(id string, service string, level int, time int64) error
-	UnBanned(id string, services ...string) error
-	IsBanned(id string, service string) bool
-	GetBannedLevel(id string, service string) (int64, error)
-	GetBannedTime(id string, service string) int64
-
-	Kickout(id string, device string) error
-
-	GetRequestToken(ctx ctx.Context) string
-	AddTokenGenerateFun(tokenStyle string, f model.GenerateFunc) error
-
-	CheckLogin(ctx ctx.Context) error
-
-	SetAuth(manager interface{})
-	CheckRole(ctx ctx.Context, role string) error
-	CheckPermission(ctx ctx.Context, permission string) error
-
+	// Enforcer field api
 	SetType(t string)
 	GetType() string
 	GetAdapter() persist.Adapter
@@ -54,8 +22,47 @@ type IEnforcer interface {
 	GetLogger() log.Logger
 	EnableLog()
 	IsLogEnable() bool
+	GetTokenConfig() config.TokenConfig
+
+	// Login login api
+	Login(id string, ctx ctx.Context) (string, error)
+	LoginById(id string) (string, error)
+	LoginByModel(id string, loginModel *model.Login, ctx ctx.Context) (string, error)
+
+	Logout(ctx ctx.Context) error
+	LogoutById(id string) error
+	LogoutByToken(token string) error
+
+	IsLogin(ctx ctx.Context) (bool, error)
+	IsLoginByToken(token string) (bool, error)
+	IsLoginById(id string) (bool, error)
+	CheckLogin(ctx ctx.Context) error
+
+	GetLoginId(ctx ctx.Context) (string, error)
+	GetIdByToken(token string) string
+	GetLoginCount(id string) int
+
+	Kickout(id string, device string) error
+	Replaced(id string, device string) error
+
+	// Banned banned api
+	Banned(id string, service string, level int, time int64) error
+	UnBanned(id string, services ...string) error
+	IsBanned(id string, service string) bool
+	GetBannedLevel(id string, service string) (int64, error)
+	GetBannedTime(id string, service string) int64
+
+	GetRequestToken(ctx ctx.Context) string
+	AddTokenGenerateFun(tokenStyle string, f model.GenerateFunc) error
+
+	// Access control api
+	SetAuth(manager interface{})
+	CheckRole(ctx ctx.Context, role string) error
+	CheckPermission(ctx ctx.Context, permission string) error
+
+	// Session api
 	GetSession(id string) *model.Session
+	DeleteSession(id string) error
 	UpdateSession(id string, session *model.Session) error
 	SetSession(id string, session *model.Session, timeout int64) error
-	GetTokenConfig() config.TokenConfig
 }

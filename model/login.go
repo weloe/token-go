@@ -11,7 +11,7 @@ type Login struct {
 
 func DefaultLoginModel() *Login {
 	return &Login{
-		Device:          "default",
+		Device:          "default-device",
 		IsLastingCookie: true,
 		Timeout:         60 * 60 * 24 * 30,
 		JwtData:         nil,
