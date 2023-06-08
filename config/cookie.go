@@ -11,7 +11,7 @@ type CookieConfig struct {
 func DefaultCookieConfig() *CookieConfig {
 	return &CookieConfig{
 		Domain:   "",
-		Path:     "",
+		Path:     "/",
 		Secure:   false,
 		HttpOnly: false,
 		SameSite: "",

@@ -71,6 +71,10 @@ func (e *Enforcer) responseToken(tokenValue string, loginModel *model.Login, ctx
 			}
 		}
 
+		if tokenConfig.CookieConfig.Path == "" {
+			tokenConfig.CookieConfig.Path = "/"
+		}
+
 		// add cookie use tokenConfig.CookieConfig
 		ctx.Response().AddCookie(tokenConfig.TokenName,
 			tokenValue,
