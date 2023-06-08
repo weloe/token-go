@@ -1,6 +1,6 @@
 # Token-Go
 
-This library focuses on solving login authentication problems, such as: login, multi-account login, shared token, logout, kickout ...
+This library focuses on solving login authentication problems, such as: login, multi-account login, shared token, logout, kickout, banned, SSO ...
 
 ## Installation
 
@@ -189,6 +189,9 @@ func CheckAuth(w http.ResponseWriter, req *http.Request) {
 	fmt.Fprintf(w, "you have authorization")
 }
 ```
+## SSO
+
+
 
 ## Api
 

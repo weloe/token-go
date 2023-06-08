@@ -26,3 +26,12 @@ func InterfaceToBytes(data interface{}) ([]byte, error) {
 	}
 	return nil, fmt.Errorf("unable to convert %T to []byte", data)
 }
+
+// AppendStr do not add repeated str.
+// If old slice has newStr, return directly, else append
+func AppendStr(old []string, newStr string) []string {
+	if HasStr(old, newStr) {
+		return old
+	}
+	return append(old, newStr)
+}
