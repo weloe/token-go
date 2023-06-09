@@ -71,11 +71,11 @@ func InitWithFile(conf string, adapter persist.Adapter) (*Enforcer, error) {
 	if conf == "" || adapter == nil {
 		return nil, errors.New("InitWithFile() failed: parameters cannot be nil")
 	}
-	newConfig, err := config.NewConfig(conf)
+	newConfig, err := config.ReadConfig(conf)
 	if err != nil {
 		return nil, err
 	}
-	enforcer, err := InitWithConfig(newConfig.(*config.FileConfig).TokenConfig, adapter)
+	enforcer, err := InitWithConfig(newConfig.TokenConfig, adapter)
 	enforcer.conf = conf
 	return enforcer, err
 }

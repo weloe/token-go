@@ -44,8 +44,8 @@ func (c *FileConfig) parse(confName string) (err error) {
 	return err
 }
 
-// NewConfig create from file.
-func NewConfig(confName string) (ConfigInterface, error) {
+// ReadConfig create from file.
+func ReadConfig(confName string) (*FileConfig, error) {
 	c := &FileConfig{}
 	err := c.parse(confName)
 	return c, err
