@@ -190,7 +190,9 @@ func CheckAuth(w http.ResponseWriter, req *http.Request) {
 }
 ```
 ## SSO
+SSO-Server examples: https://github.com/weloe/token-go/blob/master/examples/sso/sso-server/sso-server.go
 
+SSO-Client examples: https://github.com/weloe/token-go/blob/master/examples/sso/sso-client-3/sso-client.go
 
 
 ## Api
