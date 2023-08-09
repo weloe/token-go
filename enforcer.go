@@ -613,7 +613,8 @@ func (e *Enforcer) sessionUnSerialize(v interface{}) *model.Session {
 	if err != nil {
 		return nil
 	}
-	session, err := serializer.UnSerialize(bytes)
+	session := &model.Session{}
+	err = serializer.UnSerialize(bytes, session)
 	if err != nil {
 		return nil
 	}

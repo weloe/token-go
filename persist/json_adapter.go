@@ -2,7 +2,6 @@ package persist
 
 import (
 	"encoding/json"
-	"github.com/weloe/token-go/model"
 )
 
 type JsonAdapter struct {
@@ -13,15 +12,18 @@ func NewJsonAdapter() *JsonAdapter {
 	return &JsonAdapter{NewDefaultAdapter()}
 }
 
-func (j *JsonAdapter) Serialize(session *model.Session) ([]byte, error) {
-	return json.Marshal(session)
-}
-
-func (j *JsonAdapter) UnSerialize(bytes []byte) (*model.Session, error) {
-	s := &model.Session{}
-	err := json.Unmarshal(bytes, s)
+func (j *JsonAdapter) Serialize(data interface{}) ([]byte, error) {
+	serializedData, err := json.Marshal(data)
 	if err != nil {
 		return nil, err
 	}
-	return s, nil
+	return serializedData, nil
+}
+
+func (j *JsonAdapter) UnSerialize(data []byte, result interface{}) error {
+	err := json.Unmarshal(data, &result)
+	if err != nil {
+		return err
+	}
+	return nil
 }
