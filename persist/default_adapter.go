@@ -92,11 +92,8 @@ func (d *DefaultAdapter) Get(key string, t ...reflect.Type) interface{} {
 	d.getExpireAndDelete(key)
 	value, _ := d.dataMap.Load(key)
 
-	if d.serializer == nil {
+	if d.serializer == nil || t == nil || len(t) == 0 {
 		return value
-	}
-	if t == nil && len(t) == 0 {
-		return nil
 	}
 	bytes, err := util.InterfaceToBytes(value)
 	if err != nil {

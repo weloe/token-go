@@ -18,7 +18,8 @@ type Adapter interface {
 	UpdateStrTimeout(key string, timeout int64) error
 
 	// Get returns interface{}
-	// If serializer != nil, need to input reflect.Type, used to serializer to deserialize
+	// If serializer != nil, need to input reflect.Type, used to serializer to deserialize,
+	// if ( serializer == nil || t == nil || len(t) == 0 ), returns value directly.
 	Get(key string, t ...reflect.Type) interface{}
 	// Set store interface{}
 	Set(key string, value interface{}, timeout int64) error
