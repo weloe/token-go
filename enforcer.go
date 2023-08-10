@@ -587,59 +587,14 @@ func (e *Enforcer) AddTokenGenerateFun(tokenStyle string, f model.GenerateFunc) 
 }
 
 func (e *Enforcer) GetSession(id string) *model.Session {
-	if v := e.adapter.Get(e.spliceSessionKey(id)); v != nil {
-		if s := e.sessionUnSerialize(v); s != nil {
-			return s
-		} else {
-			session, ok := v.(*model.Session)
-			if !ok {
-				return nil
-			}
-			return session
-		}
+	if v := e.adapter.Get(e.spliceSessionKey(id), util.GetType(&model.Session{})); v != nil {
+		return v.(*model.Session)
 	}
 	return nil
 }
 
-func (e *Enforcer) sessionUnSerialize(v interface{}) *model.Session {
-	// get serializer
-	serializer, ok := e.adapter.(persist.SerializerAdapter)
-	if !ok {
-		return nil
-	}
-
-	// to bytes
-	bytes, err := util.InterfaceToBytes(v)
-	if err != nil {
-		return nil
-	}
-	session := &model.Session{}
-	err = serializer.UnSerialize(bytes, session)
-	if err != nil {
-		return nil
-	}
-	return session
-}
-
-func (e *Enforcer) sessionSerialize(v *model.Session) ([]byte, error) {
-	serializer, ok := e.adapter.(persist.SerializerAdapter)
-
-	if !ok {
-		return nil, nil
-	}
-	return serializer.Serialize(v)
-}
-
 func (e *Enforcer) SetSession(id string, session *model.Session, timeout int64) error {
-	bytes, err := e.sessionSerialize(session)
-	if err != nil {
-		return err
-	}
-	if bytes != nil {
-		err = e.adapter.Set(e.spliceSessionKey(id), bytes, timeout)
-	} else {
-		err = e.adapter.Set(e.spliceSessionKey(id), session, timeout)
-	}
+	err := e.adapter.Set(e.spliceSessionKey(id), session, timeout)
 	if err != nil {
 		return err
 	}
@@ -655,15 +610,7 @@ func (e *Enforcer) DeleteSession(id string) error {
 }
 
 func (e *Enforcer) UpdateSession(id string, session *model.Session) error {
-	bytes, err := e.sessionSerialize(session)
-	if err != nil {
-		return err
-	}
-	if bytes != nil {
-		err = e.adapter.Update(e.spliceSessionKey(id), bytes)
-	} else {
-		err = e.adapter.Update(e.spliceSessionKey(id), session)
-	}
+	err := e.adapter.Update(e.spliceSessionKey(id), session)
 	if err != nil {
 		return err
 	}

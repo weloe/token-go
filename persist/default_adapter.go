@@ -4,15 +4,19 @@ import (
 	"errors"
 	"fmt"
 	"github.com/weloe/token-go/constant"
+	"github.com/weloe/token-go/util"
+	"log"
+	"reflect"
 	"strings"
 	"sync"
 	"time"
 )
 
 type DefaultAdapter struct {
-	dataMap   *sync.Map
-	expireMap *sync.Map
-	once      sync.Once
+	dataMap    *sync.Map
+	expireMap  *sync.Map
+	once       sync.Once
+	serializer Serializer
 }
 
 var _ Adapter = (*DefaultAdapter)(nil)
@@ -22,6 +26,10 @@ func NewDefaultAdapter() *DefaultAdapter {
 		dataMap:   &sync.Map{},
 		expireMap: &sync.Map{},
 	}
+}
+
+func (d *DefaultAdapter) SetSerializer(serializer Serializer) {
+	d.serializer = serializer
 }
 
 // GetStr if key is expired delete it before get data
@@ -80,17 +88,45 @@ func (d *DefaultAdapter) UpdateStrTimeout(key string, timeout int64) error {
 //
 //
 
-func (d *DefaultAdapter) Get(key string) interface{} {
+func (d *DefaultAdapter) Get(key string, t ...reflect.Type) interface{} {
 	d.getExpireAndDelete(key)
 	value, _ := d.dataMap.Load(key)
-	return value
+
+	if d.serializer == nil {
+		return value
+	}
+	if t == nil && len(t) == 0 {
+		return nil
+	}
+	bytes, err := util.InterfaceToBytes(value)
+	if err != nil {
+		log.Printf("Adapter.Get() failed: %v", err)
+		return nil
+	}
+	instance := reflect.New(t[0].Elem()).Interface()
+	err = d.serializer.UnSerialize(bytes, instance)
+	if err != nil {
+		log.Printf("Adapter.Get() failed: %v", err)
+		return nil
+	}
+
+	return instance
 }
 
 func (d *DefaultAdapter) Set(key string, value interface{}, timeout int64) error {
 	if timeout == 0 || timeout <= constant.NotValueExpire {
 		return errors.New("args timeout error")
 	}
-	d.dataMap.Store(key, value)
+
+	if d.serializer != nil {
+		bytes, err := d.serializer.Serialize(value)
+		if err != nil {
+			return err
+		}
+		d.dataMap.Store(key, bytes)
+	} else {
+		d.dataMap.Store(key, value)
+	}
 
 	if timeout == constant.NeverExpire {
 		d.expireMap.Store(key, constant.NeverExpire)
@@ -105,7 +141,15 @@ func (d *DefaultAdapter) Update(key string, value interface{}) error {
 	if timeout == constant.NotValueExpire {
 		return errors.New("key does not exist")
 	}
-	d.dataMap.Store(key, value)
+	if d.serializer != nil {
+		bytes, err := d.serializer.Serialize(value)
+		if err != nil {
+			return err
+		}
+		d.dataMap.Store(key, bytes)
+	} else {
+		d.dataMap.Store(key, value)
+	}
 	return nil
 }
 

@@ -1,9 +1,16 @@
 package persist
 
+import "reflect"
+
 var _ Adapter = (*EmptyAdapter)(nil)
 
 // EmptyAdapter empty adapter for extension to init enforcer
 type EmptyAdapter struct {
+}
+
+func (e *EmptyAdapter) SetSerializer(serializer Serializer) {
+	//TODO implement me
+	panic("implement me")
 }
 
 func (e *EmptyAdapter) GetStr(key string) string {
@@ -36,7 +43,7 @@ func (e *EmptyAdapter) UpdateStrTimeout(key string, timeout int64) error {
 	panic("implement me")
 }
 
-func (e *EmptyAdapter) Get(key string) interface{} {
+func (e *EmptyAdapter) Get(key string, t ...reflect.Type) interface{} {
 	//TODO implement me
 	panic("implement me")
 }
@@ -65,4 +72,3 @@ func (e *EmptyAdapter) UpdateTimeout(key string, timeout int64) error {
 	//TODO implement me
 	panic("implement me")
 }
-

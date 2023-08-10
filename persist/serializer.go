@@ -1,7 +1,6 @@
 package persist
 
-type SerializerAdapter interface {
-	Adapter
+type Serializer interface {
 	Serialize(data interface{}) ([]byte, error)
 	UnSerialize([]byte, interface{}) error
 }

@@ -1,10 +1,10 @@
 package persist
 
 type JsonAdapter struct {
-	*DefaultAdapter
-	*JsonSerializer
 }
 
-func NewJsonAdapter() *JsonAdapter {
-	return &JsonAdapter{NewDefaultAdapter(), NewJsonSerializer()}
+func NewJsonAdapter() *DefaultAdapter {
+	d := NewDefaultAdapter()
+	d.SetSerializer(NewJsonSerializer())
+	return d
 }

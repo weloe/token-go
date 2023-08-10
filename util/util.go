@@ -1,6 +1,13 @@
 package util
 
-import "fmt"
+import (
+	"fmt"
+	"reflect"
+)
+
+func GetType(i any) reflect.Type {
+	return reflect.TypeOf(i)
+}
 
 func HasNil(arr []interface{}) bool {
 	for _, elem := range arr {
