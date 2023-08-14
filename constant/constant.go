@@ -24,3 +24,5 @@ const (
 	BeKicked   int = -5
 	BeBanned   int = -6
 )
+
+const DefaultSecondAuthValue = "DefaultSecondAuthValue"

@@ -37,8 +37,10 @@ type IEnforcer interface {
 	IsLoginByToken(token string) (bool, error)
 	IsLoginById(id string) (bool, error)
 	CheckLogin(ctx ctx.Context) error
+	CheckLoginByToken(token string) error
 
 	GetLoginId(ctx ctx.Context) (string, error)
+	GetLoginIdByToken(token string) (string, error)
 	GetIdByToken(token string) string
 	GetLoginCount(id string) int
 
@@ -51,6 +53,12 @@ type IEnforcer interface {
 	IsBanned(id string, service string) bool
 	GetBannedLevel(id string, service string) (int64, error)
 	GetBannedTime(id string, service string) int64
+
+	// Second auth api
+	OpenSafe(token string, service string, time int64) error
+	IsSafe(token string, service string) bool
+	GetSafeTime(token string, service string) int64
+	CloseSafe(token string, service string) error
 
 	GetRequestToken(ctx ctx.Context) string
 	AddTokenGenerateFun(tokenStyle string, f model.GenerateFunc) error

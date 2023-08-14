@@ -18,4 +18,8 @@ type Watcher interface {
 	UnBan(loginType string, id interface{}, service string)
 	// RefreshToken called when renew token timeout
 	RefreshToken(tokenValue string, id interface{}, timeout int64)
+	// OpenSafe called when open second auth
+	OpenSafe(loginType string, token string, service string, time int64)
+	// CloseSafe called when close second auth
+	CloseSafe(loginType string, token string, service string)
 }

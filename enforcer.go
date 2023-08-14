@@ -422,9 +422,21 @@ func (e *Enforcer) CheckLogin(ctx ctx.Context) error {
 	return nil
 }
 
+func (e *Enforcer) CheckLoginByToken(token string) error {
+	_, err := e.GetLoginIdByToken(token)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (e *Enforcer) GetLoginId(ctx ctx.Context) (string, error) {
 	tokenValue := e.GetRequestToken(ctx)
-	str := e.GetIdByToken(tokenValue)
+	return e.GetLoginIdByToken(tokenValue)
+}
+
+func (e *Enforcer) GetLoginIdByToken(token string) (string, error) {
+	str := e.GetIdByToken(token)
 	if str == "" {
 		return "", errors.New("GetLoginId() failed: not logged in")
 	}
@@ -619,4 +631,52 @@ func (e *Enforcer) UpdateSession(id string, session *model.Session) error {
 
 func (e *Enforcer) GetTokenConfig() config.TokenConfig {
 	return e.config
+}
+
+func (e *Enforcer) OpenSafe(token string, service string, time int64) error {
+	if time == 0 {
+		return nil
+	}
+	err := e.CheckLoginByToken(token)
+	if err != nil {
+		return err
+	}
+	err = e.adapter.SetStr(e.spliceSecSafeKey(token, service), constant.DefaultSecondAuthValue, time)
+	if err != nil {
+		return err
+	}
+	if e.watcher != nil {
+		e.watcher.OpenSafe(e.loginType, token, service, time)
+	}
+	return nil
+}
+
+func (e *Enforcer) IsSafe(token string, service string) bool {
+	if token == "" {
+		return false
+	}
+	str := e.adapter.GetStr(e.spliceSecSafeKey(token, service))
+	return str != ""
+}
+
+func (e *Enforcer) GetSafeTime(token string, service string) int64 {
+	if token == "" {
+		return 0
+	}
+	timeout := e.adapter.GetTimeout(e.spliceSecSafeKey(token, service))
+	return timeout
+}
+
+func (e *Enforcer) CloseSafe(token string, service string) error {
+	if token == "" {
+		return nil
+	}
+	err := e.adapter.DeleteStr(e.spliceSecSafeKey(token, service))
+	if err != nil {
+		return err
+	}
+	if e.watcher != nil {
+		e.watcher.CloseSafe(e.loginType, token, service)
+	}
+	return nil
 }

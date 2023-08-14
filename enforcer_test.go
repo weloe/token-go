@@ -471,3 +471,31 @@ func TestEnforcer_GetBannedTime(t *testing.T) {
 	t.Logf("banned time = %v", enforcer.GetBannedTime("1", "comment"))
 
 }
+
+func TestEnforcer_SecSafe(t *testing.T) {
+	err, enforcer, _ := NewTestEnforcer(t)
+	if err != nil {
+		t.Fatalf("NewTestEnforcer() failed: %v", err)
+	}
+	tokenValue, err := enforcer.LoginById("1")
+	if err != nil {
+		t.Fatalf("LoginById() failed: %v", err)
+	}
+	service := "default_service"
+	err = enforcer.OpenSafe(tokenValue, service, 600000)
+	if err != nil {
+		t.Fatalf("OpenSafe() failed: %v", err)
+	}
+	isSafe := enforcer.IsSafe(tokenValue, service)
+	if !isSafe {
+		t.Fatalf("IsSafe() failed, unexpected return value: %v", isSafe)
+	}
+	err = enforcer.CloseSafe(tokenValue, service)
+	if err != nil {
+		t.Fatalf("CloseSafe() failed: %v", err)
+	}
+	isSafe = enforcer.IsSafe(tokenValue, service)
+	if isSafe {
+		t.Fatalf("IsSafe() failed, unexpected return value: %v", isSafe)
+	}
+}

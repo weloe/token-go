@@ -73,3 +73,17 @@ func (d *DefaultLogger) RefreshToken(tokenValue string, id interface{}, timeout 
 	}
 	log.Printf("RefreshToken: loginId = %v, tokenValue = %v, timeout = %v", id, tokenValue, timeout)
 }
+
+func (d *DefaultLogger) OpenSafe(loginType string, token string, service string, time int64) {
+	if !d.enable {
+		return
+	}
+	log.Printf("OpenSafe: loginType = %v, tokenValue = %v, service = %v, timeout = %v ", loginType, token, service, time)
+}
+
+func (d *DefaultLogger) CloseSafe(loginType string, token string, service string) {
+	if !d.enable {
+		return
+	}
+	log.Printf("CloseSafe: loginType = %v, tokenValue = %v, service = %v ", loginType, token, service)
+}
