@@ -392,7 +392,16 @@ func (e *Enforcer) IsLoginById(id string) (bool, error) {
 	return false, error
 }
 
+// GetId get id
+func (e *Enforcer) GetId(ctx ctx.Context) string {
+	token := e.GetRequestToken(ctx)
+	return e.GetIdByToken(token)
+}
+
 func (e *Enforcer) GetIdByToken(token string) string {
+	if token == "" {
+		return ""
+	}
 	return e.adapter.GetStr(e.spliceTokenKey(token))
 }
 
@@ -430,6 +439,7 @@ func (e *Enforcer) CheckLoginByToken(token string) error {
 	return nil
 }
 
+// GetLoginId get id and validate it
 func (e *Enforcer) GetLoginId(ctx ctx.Context) (string, error) {
 	tokenValue := e.GetRequestToken(ctx)
 	return e.GetLoginIdByToken(tokenValue)

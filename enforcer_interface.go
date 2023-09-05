@@ -41,6 +41,7 @@ type IEnforcer interface {
 
 	GetLoginId(ctx ctx.Context) (string, error)
 	GetLoginIdByToken(token string) (string, error)
+	GetId(ctx ctx.Context) string
 	GetIdByToken(token string) string
 	GetLoginCount(id string) int
 
