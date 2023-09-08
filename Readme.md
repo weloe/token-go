@@ -76,9 +76,9 @@ func Kickout(w http.ResponseWriter, req *http.Request) {
 
 The same user can only log in once:  `IsConcurrent = false && IsShare = false`
 
-The same user logs in multiple times and shares a token:  `IsConcurrent = true && IsShare = false`
+The same user logs in multiple times and shares a token:  `IsConcurrent = true && IsShare = true`
 
-Multiple logins of the same user to multiple tokens:  `IsConcurrent = true && IsShare = true`
+Multiple logins of the same user to multiple tokens:  `IsConcurrent = true && IsShare = false`
 
 ```go
 import (

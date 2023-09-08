@@ -294,6 +294,7 @@ func TestEnforcer_Kickout(t *testing.T) {
 
 func TestEnforcerNotConcurrentNotShareLogin(t *testing.T) {
 	err, enforcer, ctx := NewTestNotConcurrentEnforcer(t)
+	t.Logf("concurrent: %v, share: %v", enforcer.config.IsConcurrent, enforcer.config.IsShare)
 	if err != nil {
 		t.Errorf("InitWithConfig() failed: %v", err)
 	}
@@ -315,6 +316,7 @@ func TestEnforcerNotConcurrentNotShareLogin(t *testing.T) {
 
 func TestEnforcer_ConcurrentShare(t *testing.T) {
 	err, enforcer, ctx := NewTestEnforcer(t)
+	t.Logf("concurrent: %v, share: %v", enforcer.config.IsConcurrent, enforcer.config.IsShare)
 	if err != nil {
 		t.Errorf("InitWithConfig() failed: %v", err)
 	}
@@ -336,6 +338,7 @@ func TestEnforcer_ConcurrentShare(t *testing.T) {
 }
 func TestEnforcer_ConcurrentNotShareMultiLogin(t *testing.T) {
 	err, enforcer, ctx := NewTestConcurrentEnforcer(t)
+	t.Logf("concurrent: %v, share: %v", enforcer.config.IsConcurrent, enforcer.config.IsShare)
 	if err != nil {
 		t.Errorf("InitWithConfig() failed: %v", err)
 	}
