@@ -1,13 +1,13 @@
 package config
 
 import (
-	"fmt"
 	"github.com/spf13/viper"
+	"log"
 	"reflect"
 )
 
 type ConfigInterface interface {
-	loadTokenConfig(conf string) (*TokenConfig, error)
+	loadTokenConfig(conf string) error
 }
 
 var _ ConfigInterface = (*FileConfig)(nil)
@@ -16,29 +16,30 @@ type FileConfig struct {
 	TokenConfig *TokenConfig
 }
 
-func (c *FileConfig) loadTokenConfig(conf string) (*TokenConfig, error) {
-	var config *FileConfig
+// Use viper to load config with file.
+func (c *FileConfig) loadTokenConfig(conf string) error {
 	viper.SetConfigFile(conf)
 	var err error
 	err = viper.ReadInConfig()
 	if err != nil {
-		return nil, fmt.Errorf("error config file: %s \n", err)
+		return err
 	}
-	err = viper.Unmarshal(&config)
-	if err != nil {
-		return nil, fmt.Errorf("error viper unmarshal config: %s \n", err)
-	}
-
-	return config.TokenConfig, nil
-}
-
-func (c *FileConfig) parse(confName string) (err error) {
-	c.TokenConfig, err = c.loadTokenConfig(confName)
+	err = viper.Unmarshal(&c)
 	if err != nil {
 		return err
 	}
-	if reflect.DeepEqual(c.TokenConfig, &TokenConfig{}) {
+
+	return nil
+}
+
+func (c *FileConfig) parse(confName string) (err error) {
+	err = c.loadTokenConfig(confName)
+	if err != nil {
+		return err
+	}
+	if c.TokenConfig == nil || reflect.DeepEqual(c.TokenConfig, &TokenConfig{}) {
 		c.TokenConfig = DefaultTokenConfig()
+		log.Print("Token-go read empty or error file config, use default config")
 	}
 
 	return err
