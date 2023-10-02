@@ -655,6 +655,7 @@ func (e *Enforcer) OpenSafe(token string, service string, time int64) error {
 	if err != nil {
 		return err
 	}
+	e.logger.OpenSafe(e.loginType, token, service, time)
 	if e.watcher != nil {
 		e.watcher.OpenSafe(e.loginType, token, service, time)
 	}
@@ -685,6 +686,7 @@ func (e *Enforcer) CloseSafe(token string, service string) error {
 	if err != nil {
 		return err
 	}
+	e.logger.CloseSafe(e.loginType, token, service)
 	if e.watcher != nil {
 		e.watcher.CloseSafe(e.loginType, token, service)
 	}
