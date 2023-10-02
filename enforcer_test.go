@@ -493,9 +493,15 @@ func TestEnforcer_SecSafe(t *testing.T) {
 	if !isSafe {
 		t.Fatalf("IsSafe() failed, unexpected return value: %v", isSafe)
 	}
+	time := enforcer.GetSafeTime(tokenValue, service)
+	t.Logf("safe time is %v", time)
 	err = enforcer.CloseSafe(tokenValue, service)
 	if err != nil {
 		t.Fatalf("CloseSafe() failed: %v", err)
+	}
+	time = enforcer.GetSafeTime(tokenValue, service)
+	if time != constant.NotValueExpire {
+		t.Fatalf("error safe time: %v", time)
 	}
 	isSafe = enforcer.IsSafe(tokenValue, service)
 	if isSafe {
