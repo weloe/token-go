@@ -1,6 +1,6 @@
 # Token-Go
 
-This library focuses on solving login authentication problems, such as: login, multi-account login, shared token, logout, kickout, banned, second auth, SSO ...
+This library focuses on solving login authentication problems, such as: login, multi-account login, shared token, logout, kickout, banned, second auth, temp-token, SSO ...
 
 ## Installation
 
