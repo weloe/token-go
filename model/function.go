@@ -23,7 +23,7 @@ func (g *GenerateTokenFunc) Exec(tokenForm string) (string, error) {
 	}
 	s, err := handlerFunc()
 	if err != nil {
-		return "", nil
+		return "", err
 	}
 	return s, nil
 }

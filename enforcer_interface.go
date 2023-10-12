@@ -61,6 +61,12 @@ type IEnforcer interface {
 	GetSafeTime(token string, service string) int64
 	CloseSafe(token string, service string) error
 
+	// Temp token api
+	CreateTempToken(style string, service string, value string, timeout int64) (string, error)
+	GetTempTokenTimeout(service string, tempToken string) int64
+	ParseTempToken(service string, tempToken string) string
+	DeleteTempToken(service string, tempToken string) error
+
 	GetRequestToken(ctx ctx.Context) string
 	AddTokenGenerateFun(tokenStyle string, f model.GenerateFunc) error
 
