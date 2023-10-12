@@ -30,6 +30,7 @@ type TokenConfig struct {
 	// Set to true to read token from these method before login.
 	IsReadBody   bool
 	IsReadHeader bool
+	// If IsReadCookie is set to true, a cookie will be set after successful login
 	IsReadCookie bool
 
 	// Write token to response header.

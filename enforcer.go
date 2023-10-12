@@ -333,7 +333,7 @@ func (e *Enforcer) LogoutByToken(token string) error {
 	// delete token-id
 	id := e.GetIdByToken(token)
 	if id == "" {
-		return errors.New("not logged in")
+		return errors.New("user not logged in")
 	}
 	// delete token-id
 	err = e.adapter.Delete(e.spliceTokenKey(token))
@@ -369,35 +369,32 @@ func (e *Enforcer) LogoutByToken(token string) error {
 // IsLoginById check if user logged in by loginId.
 // check all tokenValue and if one is validated return true
 func (e *Enforcer) IsLoginById(id string) (bool, error) {
-	var error error
+	var err error
 	session := e.GetSession(id)
 	if session != nil {
 		l := session.TokenSignList
 		for _, tokenSign := range l {
-			str := e.GetIdByToken(tokenSign.Value)
-			if str == "" {
-				continue
-			}
-			value, err := e.validateValue(str)
+			err = e.CheckLoginByToken(tokenSign.Value)
 			if err != nil {
-				error = err
 				continue
 			}
-			if value {
-				return true, nil
-			}
+			return true, nil
 		}
 	}
 
-	return false, error
+	return false, err
 }
 
-// GetId get id
+// GetId get the id from the Adapter, do not check the value
+// 	if GetId()= -4, it means that user be replaced
+//	if GetId()= -5, it means that user be kicked
+//	if GetId()= -6, it means that user be banned
 func (e *Enforcer) GetId(ctx ctx.Context) string {
 	token := e.GetRequestToken(ctx)
 	return e.GetIdByToken(token)
 }
 
+// GetIdByToken get the id from the Adapter
 func (e *Enforcer) GetIdByToken(token string) string {
 	if token == "" {
 		return ""
@@ -415,12 +412,13 @@ func (e *Enforcer) IsLoginByToken(tokenValue string) (bool, error) {
 	if tokenValue == "" {
 		return false, nil
 	}
-	str := e.GetIdByToken(tokenValue)
-	if str == "" {
-		return false, nil
+
+	err := e.CheckLoginByToken(tokenValue)
+	if err != nil {
+		return false, err
 	}
 
-	return e.validateValue(str)
+	return true, nil
 }
 
 func (e *Enforcer) CheckLogin(ctx ctx.Context) error {
@@ -439,7 +437,7 @@ func (e *Enforcer) CheckLoginByToken(token string) error {
 	return nil
 }
 
-// GetLoginId get id and validate it
+// GetLoginId get id and check it
 func (e *Enforcer) GetLoginId(ctx ctx.Context) (string, error) {
 	tokenValue := e.GetRequestToken(ctx)
 	return e.GetLoginIdByToken(tokenValue)
@@ -450,7 +448,7 @@ func (e *Enforcer) GetLoginIdByToken(token string) (string, error) {
 	if str == "" {
 		return "", errors.New("GetLoginId() failed: not logged in")
 	}
-	validate, err := e.validateValue(str)
+	validate, err := e.checkId(str)
 	if !validate {
 		return "", err
 	}

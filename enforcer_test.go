@@ -254,8 +254,8 @@ func TestEnforcer_Logout(t *testing.T) {
 	if login {
 		t.Errorf("IsLogin() failed: unexpected value %v", login)
 	}
-	if err != nil {
-		t.Errorf("err: %v", err)
+	if login && err != nil {
+		t.Errorf("IsLogin() returns unexpected error: %v", err)
 	}
 }
 

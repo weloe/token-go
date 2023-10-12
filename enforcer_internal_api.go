@@ -1,9 +1,9 @@
 package token_go
 
 import (
-	"errors"
 	"github.com/weloe/token-go/constant"
 	"github.com/weloe/token-go/ctx"
+	"github.com/weloe/token-go/errors"
 	"github.com/weloe/token-go/model"
 	"math"
 	"strconv"
@@ -92,21 +92,21 @@ func (e *Enforcer) responseToken(tokenValue string, loginModel *model.Login, ctx
 	return nil
 }
 
-// validateValue validate if value is proper
-func (e *Enforcer) validateValue(str string) (bool, error) {
+// checkId check id
+func (e *Enforcer) checkId(str string) (bool, error) {
 	i, err := strconv.Atoi(str)
 	// if convert err return true
 	if err != nil {
 		return true, nil
 	}
 	if i == constant.BeReplaced {
-		return false, errors.New("this account is replaced")
+		return false, errors.BeReplaced
 	}
 	if i == constant.BeKicked {
-		return false, errors.New("this account is kicked out")
+		return false, errors.BeKicked
 	}
 	if i == constant.BeBanned {
-		return false, errors.New("this account is banned")
+		return false, errors.BeBanned
 	}
 	return true, nil
 }
