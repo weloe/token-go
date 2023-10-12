@@ -24,10 +24,8 @@ func (m *MockAclAuth) GetPermission(id string) []string {
 }
 
 func TestEnforcer_GetRole(t *testing.T) {
-	err, enforcer, ctx := NewTestEnforcer(t)
-	if err != nil {
-		t.Errorf("NewTestEnforcer() failed: %v", err)
-	}
+	enforcer, ctx := NewTestEnforcer(t)
+	var err error
 	m := &MockRbacAuth{}
 	enforcer.SetAuth(m)
 	loginModel := model.DefaultLoginModel()
@@ -50,7 +48,8 @@ func TestEnforcer_GetRole(t *testing.T) {
 }
 
 func TestEnforcer_CheckPermission(t *testing.T) {
-	err, enforcer, ctx := NewTestEnforcer(t)
+	enforcer, ctx := NewTestEnforcer(t)
+	var err error
 	if err != nil {
 		t.Errorf("NewTestEnforcer() failed: %v", err)
 	}

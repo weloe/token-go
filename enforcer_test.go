@@ -72,7 +72,7 @@ func TestNewEnforcer(t *testing.T) {
 
 }
 
-func NewTestEnforcer(t *testing.T) (error, *Enforcer, ctx.Context) {
+func NewTestEnforcer(t *testing.T) (*Enforcer, ctx.Context) {
 	reqBody := bytes.NewBufferString("test request body")
 	req, err := http.NewRequest("POST", "/test", reqBody)
 	if err != nil {
@@ -89,7 +89,10 @@ func NewTestEnforcer(t *testing.T) (error, *Enforcer, ctx.Context) {
 	tokenConfig := config.DefaultTokenConfig()
 
 	enforcer, err := NewEnforcer(adapter, tokenConfig)
-	return err, enforcer, ctx
+	if err != nil {
+		t.Fatalf("NewEnforcer() failed: %v", err)
+	}
+	return enforcer, ctx
 }
 
 func NewTestConcurrentEnforcer(t *testing.T) (error, *Enforcer, ctx.Context) {
@@ -163,7 +166,8 @@ func TestNewEnforcerByFile(t *testing.T) {
 }
 
 func TestEnforcer_Login(t *testing.T) {
-	err, enforcer, ctx := NewTestEnforcer(t)
+	enforcer, ctx := NewTestEnforcer(t)
+	var err error
 	enforcer.EnableLog()
 	if err != nil {
 		t.Errorf("InitWithConfig() failed: %v", err)
@@ -207,7 +211,8 @@ func TestEnforcer_Login(t *testing.T) {
 }
 
 func TestEnforcer_GetLoginId(t *testing.T) {
-	err, enforcer, ctx := NewTestEnforcer(t)
+	enforcer, ctx := NewTestEnforcer(t)
+	var err error
 	if err != nil {
 		t.Errorf("InitWithConfig() failed: %v", err)
 	}
@@ -230,7 +235,8 @@ func TestEnforcer_GetLoginId(t *testing.T) {
 }
 
 func TestEnforcer_Logout(t *testing.T) {
-	err, enforcer, ctx := NewTestEnforcer(t)
+	enforcer, ctx := NewTestEnforcer(t)
+	var err error
 	if err != nil {
 		t.Errorf("InitWithConfig() failed: %v", err)
 	}
@@ -260,7 +266,8 @@ func TestEnforcer_Logout(t *testing.T) {
 }
 
 func TestEnforcer_Kickout(t *testing.T) {
-	err, enforcer, ctx := NewTestEnforcer(t)
+	enforcer, ctx := NewTestEnforcer(t)
+	var err error
 	if err != nil {
 		t.Errorf("InitWithConfig() failed: %v", err)
 	}
@@ -315,7 +322,8 @@ func TestEnforcerNotConcurrentNotShareLogin(t *testing.T) {
 }
 
 func TestEnforcer_ConcurrentShare(t *testing.T) {
-	err, enforcer, ctx := NewTestEnforcer(t)
+	enforcer, ctx := NewTestEnforcer(t)
+	var err error
 	t.Logf("concurrent: %v, share: %v", enforcer.config.IsConcurrent, enforcer.config.IsShare)
 	if err != nil {
 		t.Errorf("InitWithConfig() failed: %v", err)
@@ -424,7 +432,8 @@ func TestEnforcer_JsonAdapter(t *testing.T) {
 }
 
 func TestEnforcer_Banned(t *testing.T) {
-	err, enforcer, _ := NewTestEnforcer(t)
+	enforcer, _ := NewTestEnforcer(t)
+	var err error
 	if err != nil {
 		t.Fatalf("NewTestEnforcer() failed: %v", err)
 	}
@@ -455,7 +464,8 @@ func TestEnforcer_Banned(t *testing.T) {
 }
 
 func TestEnforcer_GetBannedTime(t *testing.T) {
-	err, enforcer, _ := NewTestEnforcer(t)
+	enforcer, _ := NewTestEnforcer(t)
+	var err error
 	if err != nil {
 		t.Fatalf("NewTestEnforcer() failed: %v", err)
 	}
@@ -476,7 +486,8 @@ func TestEnforcer_GetBannedTime(t *testing.T) {
 }
 
 func TestEnforcer_SecSafe(t *testing.T) {
-	err, enforcer, _ := NewTestEnforcer(t)
+	enforcer, _ := NewTestEnforcer(t)
+	var err error
 	if err != nil {
 		t.Fatalf("NewTestEnforcer() failed: %v", err)
 	}
