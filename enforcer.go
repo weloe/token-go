@@ -203,7 +203,7 @@ func (e *Enforcer) LoginByModel(id string, loginModel *model.Login, ctx ctx.Cont
 	}
 
 	// response token
-	err = e.responseToken(tokenValue, loginModel, ctx)
+	err = e.ResponseToken(tokenValue, loginModel, ctx)
 	if err != nil {
 		return "", err
 	}

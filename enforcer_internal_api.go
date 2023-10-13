@@ -49,7 +49,7 @@ func (e *Enforcer) createLoginToken(id string, loginModel *model.Login) (string,
 }
 
 // ResponseToken set token to cookie or header
-func (e *Enforcer) responseToken(tokenValue string, loginModel *model.Login, ctx ctx.Context) error {
+func (e *Enforcer) ResponseToken(tokenValue string, loginModel *model.Login, ctx ctx.Context) error {
 	if ctx == nil {
 		return nil
 	}
