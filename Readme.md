@@ -209,7 +209,9 @@ https://github.com/weloe/token-go-extensions
 | StatelessEnforcer | `go get github.com/weloe/token-go-extensions/jwt` |
 
 
+## Documentation
 
+https://github.com/weloe/token-go/wiki
 
 ## Api
 
