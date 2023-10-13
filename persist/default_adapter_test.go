@@ -181,17 +181,20 @@ func TestDefaultAdapter_InterfaceOperation(t *testing.T) {
 
 func TestDefaultAdapter_DeleteBatchFilteredValue(t *testing.T) {
 	adapter := NewTestDefaultAdapter()
-	adapter.(*DefaultAdapter).StartCleanTimer(2)
-	if err := adapter.SetStr("k_1", "v", -1); err != nil {
+	err := adapter.(*DefaultAdapter).EnableCleanTimer(2)
+	if err != nil {
+		t.Fatalf("EnableCleanTimer() failed: %v", err)
+	}
+	if err = adapter.SetStr("k_1", "v", -1); err != nil {
 		t.Errorf("SetStr() failed: %v", err)
 	}
-	if err := adapter.SetStr("k_2", "v", -1); err != nil {
+	if err = adapter.SetStr("k_2", "v", -1); err != nil {
 		t.Errorf("SetStr() failed: %v", err)
 	}
-	if err := adapter.SetStr("k_3", "v", -1); err != nil {
+	if err = adapter.SetStr("k_3", "v", -1); err != nil {
 		t.Errorf("SetStr() failed: %v", err)
 	}
-	err := adapter.(BatchAdapter).DeleteBatchFilteredKey("k_")
+	err = adapter.(BatchAdapter).DeleteBatchFilteredKey("k_")
 	if err != nil {
 		t.Errorf("DeleteBatchFilteredKey() failed: %v", err)
 	}

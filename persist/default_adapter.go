@@ -3,19 +3,15 @@ package persist
 import (
 	"errors"
 	"fmt"
-	"github.com/weloe/token-go/constant"
+	"github.com/weloe/token-go/persist/cache"
 	"github.com/weloe/token-go/util"
 	"log"
 	"reflect"
 	"strings"
-	"sync"
-	"time"
 )
 
 type DefaultAdapter struct {
-	dataMap    *sync.Map
-	expireMap  *sync.Map
-	once       sync.Once
+	cache      cache.Cache
 	serializer Serializer
 }
 
@@ -23,8 +19,7 @@ var _ Adapter = (*DefaultAdapter)(nil)
 
 func NewDefaultAdapter() *DefaultAdapter {
 	return &DefaultAdapter{
-		dataMap:   &sync.Map{},
-		expireMap: &sync.Map{},
+		cache: cache.NewDefaultLocalCache(),
 	}
 }
 
@@ -34,8 +29,7 @@ func (d *DefaultAdapter) SetSerializer(serializer Serializer) {
 
 // GetStr if key is expired delete it before get data
 func (d *DefaultAdapter) GetStr(key string) string {
-	_ = d.getExpireAndDelete(key)
-	value, _ := d.dataMap.Load(key)
+	value := d.cache.Get(key)
 	if value == nil {
 		return ""
 	}
@@ -43,45 +37,23 @@ func (d *DefaultAdapter) GetStr(key string) string {
 }
 
 func (d *DefaultAdapter) SetStr(key string, value string, timeout int64) error {
-	if timeout == 0 || timeout <= constant.NotValueExpire {
-		return errors.New("args timeout error")
-	}
-	d.dataMap.Store(key, value)
-
-	if timeout == constant.NeverExpire {
-		d.expireMap.Store(key, constant.NeverExpire)
-	} else {
-		d.expireMap.Store(key, time.Now().UnixMilli()+timeout*1000)
-	}
-	return nil
+	return d.cache.Set(key, value, timeout)
 }
 
 func (d *DefaultAdapter) UpdateStr(key string, value string) error {
-	timeout := d.GetStrTimeout(key)
-	if timeout == constant.NotValueExpire {
-		return errors.New("does not exist")
-	}
-	d.dataMap.Store(key, value)
-	return nil
+	return d.cache.Update(key, value)
 }
 
 func (d *DefaultAdapter) DeleteStr(key string) error {
-	d.dataMap.Delete(key)
-	d.expireMap.Delete(key)
-	return nil
+	return d.cache.Delete(key)
 }
 
 func (d *DefaultAdapter) GetStrTimeout(key string) int64 {
-	return d.getTimeout(key)
+	return d.cache.GetTimeout(key)
 }
 
 func (d *DefaultAdapter) UpdateStrTimeout(key string, timeout int64) error {
-	if timeout == constant.NeverExpire {
-		d.expireMap.Store(key, constant.NeverExpire)
-	} else {
-		d.expireMap.Store(key, time.Now().UnixMilli()+timeout*1000)
-	}
-	return nil
+	return d.cache.UpdateTimeout(key, timeout)
 }
 
 // interface{} operation
@@ -89,8 +61,7 @@ func (d *DefaultAdapter) UpdateStrTimeout(key string, timeout int64) error {
 //
 
 func (d *DefaultAdapter) Get(key string, t ...reflect.Type) interface{} {
-	d.getExpireAndDelete(key)
-	value, _ := d.dataMap.Load(key)
+	value := d.cache.Get(key)
 
 	if d.serializer == nil || t == nil || len(t) == 0 {
 		return value
@@ -111,126 +82,62 @@ func (d *DefaultAdapter) Get(key string, t ...reflect.Type) interface{} {
 }
 
 func (d *DefaultAdapter) Set(key string, value interface{}, timeout int64) error {
-	if timeout == 0 || timeout <= constant.NotValueExpire {
-		return errors.New("args timeout error")
+	if d.serializer == nil {
+		return d.cache.Set(key, value, timeout)
 	}
-
-	if d.serializer != nil {
-		bytes, err := d.serializer.Serialize(value)
-		if err != nil {
-			return err
-		}
-		d.dataMap.Store(key, bytes)
-	} else {
-		d.dataMap.Store(key, value)
+	bytes, err := d.serializer.Serialize(value)
+	if err != nil {
+		return err
 	}
-
-	if timeout == constant.NeverExpire {
-		d.expireMap.Store(key, constant.NeverExpire)
-	} else {
-		d.expireMap.Store(key, time.Now().UnixMilli()+timeout*1000)
-	}
-	return nil
+	return d.cache.Set(key, bytes, timeout)
 }
 
 func (d *DefaultAdapter) Update(key string, value interface{}) error {
-	timeout := d.GetStrTimeout(key)
-	if timeout == constant.NotValueExpire {
-		return errors.New("key does not exist")
+	if d.serializer == nil {
+		return d.cache.Update(key, value)
 	}
-	if d.serializer != nil {
-		bytes, err := d.serializer.Serialize(value)
-		if err != nil {
-			return err
-		}
-		d.dataMap.Store(key, bytes)
-	} else {
-		d.dataMap.Store(key, value)
+	bytes, err := d.serializer.Serialize(value)
+	if err != nil {
+		return err
 	}
-	return nil
+	return d.cache.Update(key, bytes)
 }
 
 func (d *DefaultAdapter) GetTimeout(key string) int64 {
-	return d.getTimeout(key)
+	return d.cache.GetTimeout(key)
 }
 
 func (d *DefaultAdapter) UpdateTimeout(key string, timeout int64) error {
-	if timeout == constant.NeverExpire {
-		d.expireMap.Store(key, constant.NeverExpire)
-	} else {
-		d.expireMap.Store(key, time.Now().UnixMilli()+timeout*1000)
-	}
-	return nil
+	return d.cache.UpdateTimeout(key, timeout)
 }
 
 func (d *DefaultAdapter) Delete(key string) error {
-	d.dataMap.Delete(key)
-	d.expireMap.Delete(key)
-	return nil
+	return d.cache.Delete(key)
 }
 
 func (d *DefaultAdapter) DeleteBatchFilteredKey(keyPrefix string) error {
-	d.dataMap.Range(func(key, value any) bool {
+	var err error
+	cacheEx, ok := d.cache.(cache.CacheEx)
+	if !ok {
+		return errors.New("the cache does not implement the Range method")
+	}
+	cacheEx.Range(func(key, value any) bool {
 		if strings.HasPrefix(key.(string), keyPrefix) {
-			d.dataMap.Delete(key)
+			err = d.cache.Delete(key.(string))
+			if err != nil {
+				return false
+			}
 		}
 		return true
 	})
+	return err
+}
+
+func (d *DefaultAdapter) EnableCleanTimer(period int64) error {
+	cacheEx, ok := d.cache.(cache.CacheEx)
+	if !ok {
+		return errors.New("the cache does not implement the EnableCleanTimer method")
+	}
+	cacheEx.EnableCleanTimer(period)
 	return nil
-}
-
-// delete key when getValue is expired
-func (d *DefaultAdapter) getExpireAndDelete(key string) int64 {
-	expirationTime, _ := d.expireMap.Load(key)
-
-	if expirationTime == nil {
-		return 0
-	}
-
-	if expirationTime.(int64) != constant.NeverExpire && expirationTime.(int64) <= time.Now().UnixMilli() {
-		d.dataMap.Delete(key)
-		d.expireMap.Delete(key)
-	}
-	return expirationTime.(int64)
-}
-
-func (d *DefaultAdapter) getTimeout(key string) int64 {
-	expirationTime := d.getExpireAndDelete(key)
-	if expirationTime == 0 {
-		return constant.NotValueExpire
-	}
-	if expirationTime == constant.NeverExpire {
-		return constant.NeverExpire
-	}
-	timeout := (expirationTime - time.Now().UnixMilli()) / 1000
-	if timeout <= 0 {
-		d.dataMap.Delete(key)
-		d.expireMap.Delete(key)
-		return constant.NotValueExpire
-	}
-	return timeout
-}
-
-func (d *DefaultAdapter) StartCleanTimer(period int64) {
-	d.once.Do(func() {
-		go d.CleanTask(period)
-	})
-}
-
-func (d *DefaultAdapter) CleanTask(period int64) {
-	if period < 0 {
-		return
-	}
-	duration := period
-
-	// create timer
-	ticker := time.NewTicker(time.Duration(duration) * time.Second)
-	defer ticker.Stop()
-
-	for range ticker.C {
-		d.expireMap.Range(func(key, value any) bool {
-			_ = d.getExpireAndDelete(key.(string))
-			return true
-		})
-	}
 }

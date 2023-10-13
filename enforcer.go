@@ -11,6 +11,7 @@ import (
 	"github.com/weloe/token-go/model"
 	"github.com/weloe/token-go/persist"
 	"github.com/weloe/token-go/util"
+	log2 "log"
 	"net/http"
 	"strconv"
 )
@@ -104,7 +105,11 @@ func (e *Enforcer) startCleanTimer() {
 	if ok {
 		dataRefreshPeriod := e.config.DataRefreshPeriod
 		if period := dataRefreshPeriod; period >= 0 {
-			defaultAdapter.StartCleanTimer(dataRefreshPeriod)
+			err := defaultAdapter.EnableCleanTimer(dataRefreshPeriod)
+			if err != nil {
+				log2.Printf("enble adapter cleanTimer failed: %v", err)
+				return
+			}
 			e.logger.StartCleanTimer(dataRefreshPeriod)
 		}
 	}
