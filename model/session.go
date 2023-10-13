@@ -3,12 +3,17 @@ package model
 import (
 	"container/list"
 	"encoding/json"
+	"fmt"
 	"time"
 )
 
 type TokenSign struct {
 	Value  string
 	Device string
+}
+
+func (t *TokenSign) String() string {
+	return fmt.Sprintf("Value: %s, Device: %s", t.Value, t.Device)
 }
 
 type Session struct {
@@ -155,4 +160,14 @@ func (s *Session) GetOrSet(key string, obj interface{}) (interface{}, bool) {
 		return obj, false
 	}
 	return value, true
+}
+
+func (s *Session) String() string {
+	tokenSigns := ""
+	for _, ts := range s.TokenSignList {
+		tokenSigns += ts.String() + "\n"
+	}
+
+	return fmt.Sprintf("Id: %s, Type: %s, LoginType: %s, LoginId: %s, Token: %s, CreateTime: %d, DataMap: %+v, \nTokenSignList:\n%s",
+		s.Id, s.Type, s.LoginType, s.LoginId, s.Token, s.CreateTime, s.DataMap, tokenSigns)
 }

@@ -416,6 +416,7 @@ func TestEnforcer_JsonAdapter(t *testing.T) {
 	if id := session.Id; id != "1" {
 		t.Errorf("GetSession() failed")
 	}
+	t.Logf("GetSession(): %v", session)
 	if num := len(session.TokenSignList); num != 2 {
 		t.Fatalf("unexpected session tokenSignList length = %v", num)
 	}
