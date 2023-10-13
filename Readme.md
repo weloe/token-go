@@ -195,6 +195,22 @@ SSO-Server examples: https://github.com/weloe/token-go/blob/master/examples/sso/
 SSO-Client examples: https://github.com/weloe/token-go/blob/master/examples/sso/sso-client-3/sso-client.go
 
 
+## Extensions
+https://github.com/weloe/token-go-extensions
+
+| Adapter      |                                                             |
+| ------------ | ----------------------------------------------------------- |
+| RedisAdapter | `go get github.com/weloe/token-go-extensions/redis-adapter` |
+
+
+
+| Enforcer          |                                                   |
+| ----------------- | ------------------------------------------------- |
+| StatelessEnforcer | `go get github.com/weloe/token-go-extensions/jwt` |
+
+
+
+
 ## Api
 
 [token_go package - github.com/weloe/token-go - Go Packages](https://pkg.go.dev/github.com/weloe/token-go#section-documentation)
