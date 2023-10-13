@@ -67,11 +67,16 @@ func (s *SsoEnforcer) GetLoginId(ticket string) string {
 	if ticket == "" {
 		return ""
 	}
-	loginId := s.enforcer.GetAdapter().GetStr(s.spliceTicketSaveKey(ticket))
+	loginId := s.getLoginIdByTicket(ticket)
 	if loginId != "" && strings.Contains(loginId, ",") {
 		split := strings.Split(loginId, ",")
 		loginId = split[0]
 	}
+	return loginId
+}
+
+func (s *SsoEnforcer) getLoginIdByTicket(ticket string) string {
+	loginId := s.enforcer.GetAdapter().GetStr(s.spliceTicketSaveKey(ticket))
 	return loginId
 }
 
@@ -90,7 +95,7 @@ func (s *SsoEnforcer) CheckTicket(ticket string) (string, error) {
 
 // CheckTicketByClient check ticket by pointing client,return loginId.
 func (s *SsoEnforcer) CheckTicketByClient(ticket string, client string) (string, error) {
-	id := s.enforcer.GetAdapter().GetStr(s.spliceTicketSaveKey(ticket))
+	id := s.getLoginIdByTicket(ticket)
 	if id == "" {
 		return "", nil
 	}
@@ -379,22 +384,7 @@ func (s *SsoEnforcer) saveTicket(ticket string, loginId string, client string) e
 	return s.enforcer.GetAdapter().SetStr(s.spliceTicketSaveKey(ticket), value, ticketTimeout)
 }
 
-// saveTicketIndex save id-ticket.
-func (s *SsoEnforcer) saveTicketIndex(ticket string, id string) error {
-	ticketTimeout := s.config.TicketTimeout
-	return s.enforcer.GetAdapter().SetStr(s.spliceTicketIndexKey(id), ticket, ticketTimeout)
-}
-
-// spliceTicketSaveKey splice ticket-id key.
-func (s *SsoEnforcer) spliceTicketSaveKey(ticket string) string {
-	return s.enforcer.GetTokenConfig().TokenName + ":ticket:" + ticket
-}
-
-// spliceTicketIndexKey splice id-ticket key.
-func (s *SsoEnforcer) spliceTicketIndexKey(id string) string {
-	return s.enforcer.GetTokenConfig().TokenName + ":id-ticket:" + id
-}
-
+// delete ticket - id,client
 func (s *SsoEnforcer) deleteTicket(ticket string) error {
 	if ticket == "" {
 		return nil
@@ -402,11 +392,27 @@ func (s *SsoEnforcer) deleteTicket(ticket string) error {
 	return s.enforcer.GetAdapter().DeleteStr(s.spliceTicketSaveKey(ticket))
 }
 
+// spliceTicketSaveKey splice ticket-id,client key.
+func (s *SsoEnforcer) spliceTicketSaveKey(ticket string) string {
+	return s.enforcer.GetTokenConfig().TokenName + ":ticket:" + ticket
+}
+
+// saveTicketIndex save id-ticket.
+func (s *SsoEnforcer) saveTicketIndex(ticket string, id string) error {
+	ticketTimeout := s.config.TicketTimeout
+	return s.enforcer.GetAdapter().SetStr(s.spliceTicketIndexKey(id), ticket, ticketTimeout)
+}
+
 func (s *SsoEnforcer) deleteTicketIndex(id string) error {
 	if id == "" {
 		return nil
 	}
 	return s.enforcer.GetAdapter().DeleteStr(s.spliceTicketIndexKey(id))
+}
+
+// spliceTicketIndexKey splice id-ticket key.
+func (s *SsoEnforcer) spliceTicketIndexKey(id string) string {
+	return s.enforcer.GetTokenConfig().TokenName + ":id-ticket:" + id
 }
 
 // checkTimeStamp determine whether the gap between the timestamp and the current timestamp is within the allowable range.
@@ -430,7 +436,7 @@ func (s *SsoEnforcer) isValidTimeStamp(timestamp int64) bool {
 	return allowDisparity == 1 || nowDisparity <= allowDisparity
 }
 
-// checkNonce the same nonce can only be verified once.
+// checkNonce the same nonce can only be verified once, cannot be used again for a period of time after use
 func (s *SsoEnforcer) checkNonce(nonce string) error {
 	if nonce == "" {
 		return errors.New("nonce is nil")

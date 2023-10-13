@@ -2,7 +2,8 @@ package config
 
 // SignConfig sign config
 type SignConfig struct {
-	SecretKey          string
+	SecretKey string
+	// nonce exist time
 	TimeStampDisparity int64
 	IsCheckNonce       bool
 }
