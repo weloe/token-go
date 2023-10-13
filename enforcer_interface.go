@@ -68,7 +68,7 @@ type IEnforcer interface {
 	DeleteTempToken(service string, tempToken string) error
 
 	GetRequestToken(ctx ctx.Context) string
-	AddTokenGenerateFun(tokenStyle string, f model.GenerateFunc) error
+	AddTokenGenerateFun(tokenStyle string, f model.HandlerFunc) error
 
 	// Access control api
 	SetAuth(manager interface{})

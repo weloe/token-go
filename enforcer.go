@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/weloe/token-go/config"
-	"github.com/weloe/token-go/constant"
 	"github.com/weloe/token-go/ctx"
 	httpCtx "github.com/weloe/token-go/ctx/go-http-context"
 	"github.com/weloe/token-go/log"
@@ -13,7 +12,6 @@ import (
 	"github.com/weloe/token-go/util"
 	log2 "log"
 	"net/http"
-	"strconv"
 )
 
 type Enforcer struct {
@@ -183,21 +181,22 @@ func (e *Enforcer) LoginByModel(id string, loginModel *model.Login, ctx ctx.Cont
 
 	// add tokenSign
 	if session = e.GetSession(id); session == nil {
-		session = model.NewSession(e.spliceSessionKey(id), "account-session", id)
+		session = model.NewSession("0", "account-session", id)
 	}
 	session.AddTokenSign(&model.TokenSign{
 		Value:  tokenValue,
 		Device: loginModel.Device,
 	})
 
+	timeout := loginModel.Timeout
 	// reset session
-	err = e.SetSession(id, session, loginModel.Timeout)
+	err = e.SetSession(id, session, timeout)
 	if err != nil {
 		return "", err
 	}
 
 	// set token-id
-	err = e.adapter.SetStr(e.spliceTokenKey(tokenValue), id, loginModel.Timeout)
+	err = e.SetIdByToken(id, tokenValue, timeout)
 	if err != nil {
 		return "", err
 	}
@@ -212,7 +211,7 @@ func (e *Enforcer) LoginByModel(id string, loginModel *model.Login, ctx ctx.Cont
 	m := &model.Login{
 		Device:          loginModel.Device,
 		IsLastingCookie: loginModel.IsLastingCookie,
-		Timeout:         loginModel.Timeout,
+		Timeout:         timeout,
 		JwtData:         loginModel.JwtData,
 		Token:           tokenValue,
 		IsWriteHeader:   loginModel.IsWriteHeader,
@@ -234,13 +233,14 @@ func (e *Enforcer) LoginByModel(id string, loginModel *model.Login, ctx ctx.Cont
 				for _, tokenSign := range session.TokenSignList {
 					if session.TokenSignSize() > int(tokenConfig.MaxLoginCount) {
 						// delete tokenSign
-						session.RemoveTokenSign(tokenSign.Value)
+						tokenSignValue := tokenSign.Value
+						session.RemoveTokenSign(tokenSignValue)
 						err = e.UpdateSession(id, session)
 						if err != nil {
 							return "", err
 						}
 						// delete token-id
-						err = e.adapter.Delete(e.spliceTokenKey(tokenSign.Value))
+						err = e.deleteIdByToken(tokenSignValue)
 						if err != nil {
 							return "", err
 						}
@@ -260,40 +260,6 @@ func (e *Enforcer) LoginByModel(id string, loginModel *model.Login, ctx ctx.Cont
 	}
 
 	return tokenValue, nil
-}
-
-// Replaced replace other user
-func (e *Enforcer) Replaced(id string, device string) error {
-	var err error
-	if session := e.GetSession(id); session != nil {
-		// get by login device
-		tokenSignList := session.GetFilterTokenSign(device)
-		// sign account replaced
-		for element := tokenSignList.Front(); element != nil; element = element.Next() {
-			if tokenSign, ok := element.Value.(*model.TokenSign); ok {
-				elementV := tokenSign.Value
-				session.RemoveTokenSign(elementV)
-				err = e.UpdateSession(id, session)
-				if err != nil {
-					return err
-				}
-				// sign token replaced
-				err = e.adapter.UpdateStr(e.spliceTokenKey(elementV), strconv.Itoa(constant.BeReplaced))
-				if err != nil {
-					return err
-				}
-
-				// called logger
-				e.logger.Replace(e.loginType, id, tokenSign.Value)
-
-				// called watcher
-				if e.watcher != nil {
-					e.watcher.Replace(e.loginType, id, tokenSign.Value)
-				}
-			}
-		}
-	}
-	return nil
 }
 
 // Logout user logout
@@ -341,7 +307,7 @@ func (e *Enforcer) LogoutByToken(token string) error {
 		return errors.New("user not logged in")
 	}
 	// delete token-id
-	err = e.adapter.Delete(e.spliceTokenKey(token))
+	err = e.deleteIdByToken(token)
 	if err != nil {
 		return err
 	}
@@ -404,7 +370,7 @@ func (e *Enforcer) GetIdByToken(token string) string {
 	if token == "" {
 		return ""
 	}
-	return e.adapter.GetStr(e.spliceTokenKey(token))
+	return e.getIdByToken(token)
 }
 
 // IsLogin check if user logged in by token.
@@ -468,116 +434,10 @@ func (e *Enforcer) GetLoginCount(id string) int {
 	return 0
 }
 
-// Banned ban user, if time == 0,the timeout is not set
-func (e *Enforcer) Banned(id string, service string, level int, time int64) error {
-	if id == "" || service == "" {
-		return fmt.Errorf("parameter cannot be nil")
-	}
-	if level < 1 {
-		return fmt.Errorf("unexpected level = %v, level must large or equal 1", level)
-	}
-	err := e.adapter.SetStr(e.spliceBannedKey(id, service), strconv.Itoa(level), time)
-	if err != nil {
-		return err
-	}
-
-	// callback
-	e.logger.Ban(e.loginType, id, service, level, time)
-	if e.watcher != nil {
-		e.watcher.Ban(e.loginType, id, service, level, time)
-	}
-
-	return nil
-}
-
-// UnBanned Unblock user account
-func (e *Enforcer) UnBanned(id string, services ...string) error {
-	if id == "" {
-		return fmt.Errorf("parmeter id can not be nil")
-	}
-	if len(services) == 0 {
-		return fmt.Errorf("parmeter services length can not be 0")
-	}
-
-	for _, service := range services {
-		err := e.adapter.DeleteStr(e.spliceBannedKey(id, service))
-		if err != nil {
-			return err
-		}
-		e.logger.UnBan(e.loginType, id, service)
-		if e.watcher != nil {
-			e.watcher.UnBan(e.loginType, id, service)
-		}
-	}
-	return nil
-}
-
-// IsBanned if banned return true, else return false
-func (e *Enforcer) IsBanned(id string, services string) bool {
-	s := e.adapter.GetStr(e.spliceBannedKey(id, services))
-
-	return s != ""
-}
-
-// GetBannedLevel get banned level
-func (e *Enforcer) GetBannedLevel(id string, service string) (int64, error) {
-	str := e.adapter.GetStr(e.spliceBannedKey(id, service))
-	if str == "" {
-		return 0, fmt.Errorf("loginId = %v, service = %v is not banned", id, service)
-	}
-	time, err := strconv.ParseInt(str, 10, 64)
-	if err != nil {
-		return 0, err
-	}
-	return time, nil
-}
-
 // GetBannedTime get banned time
 func (e *Enforcer) GetBannedTime(id string, service string) int64 {
-	timeout := e.adapter.GetStrTimeout(e.spliceBannedKey(id, service))
+	timeout := e.getBannedTime(id, service)
 	return timeout
-}
-
-// Kickout kickout user
-func (e *Enforcer) Kickout(id string, device string) error {
-	session := e.GetSession(id)
-	if session != nil {
-		// get by login device
-		tokenSignList := session.GetFilterTokenSign(device)
-		// sign account kicked
-		for element := tokenSignList.Front(); element != nil; element = element.Next() {
-			if tokenSign, ok := element.Value.(*model.TokenSign); ok {
-				elementV := tokenSign.Value
-				session.RemoveTokenSign(elementV)
-				err := e.UpdateSession(id, session)
-				if err != nil {
-					return err
-				}
-				// sign token kicked
-				err = e.adapter.UpdateStr(e.spliceTokenKey(elementV), strconv.Itoa(constant.BeKicked))
-				if err != nil {
-					return err
-				}
-
-				// called logger
-				e.logger.Kickout(e.loginType, id, tokenSign.Value)
-
-				// called watcher
-				if e.watcher != nil {
-					e.watcher.Kickout(e.loginType, id, tokenSign.Value)
-				}
-			}
-		}
-
-	}
-	// check TokenSignList length, if length == 0, delete this session
-	if session != nil && session.TokenSignSize() == 0 {
-		err := e.DeleteSession(id)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 // GetRequestToken read token from requestHeader | cookie | requestBody
@@ -606,7 +466,7 @@ func (e *Enforcer) GetRequestToken(ctx ctx.Context) string {
 }
 
 // AddTokenGenerateFun add token generate strategy
-func (e *Enforcer) AddTokenGenerateFun(tokenStyle string, f model.GenerateFunc) error {
+func (e *Enforcer) AddTokenGenerateFun(tokenStyle string, f model.HandlerFunc) error {
 	e.generateFunc.AddFunc(tokenStyle, f)
 	return nil
 }
@@ -644,54 +504,4 @@ func (e *Enforcer) UpdateSession(id string, session *model.Session) error {
 
 func (e *Enforcer) GetTokenConfig() config.TokenConfig {
 	return e.config
-}
-
-func (e *Enforcer) OpenSafe(token string, service string, time int64) error {
-	if time == 0 {
-		return nil
-	}
-	err := e.CheckLoginByToken(token)
-	if err != nil {
-		return err
-	}
-	err = e.adapter.SetStr(e.spliceSecSafeKey(token, service), constant.DefaultSecondAuthValue, time)
-	if err != nil {
-		return err
-	}
-	e.logger.OpenSafe(e.loginType, token, service, time)
-	if e.watcher != nil {
-		e.watcher.OpenSafe(e.loginType, token, service, time)
-	}
-	return nil
-}
-
-func (e *Enforcer) IsSafe(token string, service string) bool {
-	if token == "" {
-		return false
-	}
-	str := e.adapter.GetStr(e.spliceSecSafeKey(token, service))
-	return str != ""
-}
-
-func (e *Enforcer) GetSafeTime(token string, service string) int64 {
-	if token == "" {
-		return 0
-	}
-	timeout := e.adapter.GetTimeout(e.spliceSecSafeKey(token, service))
-	return timeout
-}
-
-func (e *Enforcer) CloseSafe(token string, service string) error {
-	if token == "" {
-		return nil
-	}
-	err := e.adapter.DeleteStr(e.spliceSecSafeKey(token, service))
-	if err != nil {
-		return err
-	}
-	e.logger.CloseSafe(e.loginType, token, service)
-	if e.watcher != nil {
-		e.watcher.CloseSafe(e.loginType, token, service)
-	}
-	return nil
 }

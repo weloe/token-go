@@ -111,14 +111,90 @@ func (e *Enforcer) checkId(str string) (bool, error) {
 	return true, nil
 }
 
+func (e *Enforcer) SetIdByToken(id string, tokenValue string, timeout int64) error {
+	err := e.adapter.SetStr(e.spliceTokenKey(tokenValue), id, timeout)
+	return err
+}
+
+func (e *Enforcer) getIdByToken(token string) string {
+	return e.adapter.GetStr(e.spliceTokenKey(token))
+}
+
+func (e *Enforcer) deleteIdByToken(tokenValue string) error {
+	err := e.adapter.DeleteStr(e.spliceTokenKey(tokenValue))
+	return err
+}
+
+func (e *Enforcer) updateIdByToken(tokenValue string, id string) error {
+	err := e.adapter.UpdateStr(e.spliceTokenKey(tokenValue), id)
+	return err
+}
+
+func (e *Enforcer) setBanned(id string, service string, level int, time int64) error {
+	err := e.adapter.SetStr(e.spliceBannedKey(id, service), strconv.Itoa(level), time)
+	return err
+}
+
+func (e *Enforcer) deleteBanned(id string, service string) error {
+	err := e.adapter.DeleteStr(e.spliceBannedKey(id, service))
+	return err
+}
+
+func (e *Enforcer) getBanned(id string, services string) string {
+	s := e.adapter.GetStr(e.spliceBannedKey(id, services))
+	return s
+}
+
+func (e *Enforcer) getBannedTime(id string, service string) int64 {
+	timeout := e.adapter.GetStrTimeout(e.spliceBannedKey(id, service))
+	return timeout
+}
+
+func (e *Enforcer) setSecSafe(token string, service string, time int64) error {
+	err := e.adapter.SetStr(e.spliceSecSafeKey(token, service), constant.DefaultSecondAuthValue, time)
+	return err
+}
+
+func (e *Enforcer) getSafeTime(token string, service string) int64 {
+	timeout := e.adapter.GetTimeout(e.spliceSecSafeKey(token, service))
+	return timeout
+}
+
+func (e *Enforcer) getSecSafe(token string, service string) string {
+	str := e.adapter.GetStr(e.spliceSecSafeKey(token, service))
+	return str
+}
+
+func (e *Enforcer) deleteSecSafe(token string, service string) error {
+	err := e.adapter.DeleteStr(e.spliceSecSafeKey(token, service))
+	return err
+}
+
+func (e *Enforcer) setTempToken(service string, token string, value string, timeout int64) error {
+	err := e.adapter.SetStr(e.spliceTempTokenKey(service, token), value, timeout)
+	return err
+}
+
+func (e *Enforcer) getTimeoutByTempToken(service string, token string) int64 {
+	return e.adapter.GetTimeout(e.spliceTempTokenKey(service, token))
+}
+
+func (e *Enforcer) deleteByTempToken(service string, tempToken string) error {
+	return e.adapter.DeleteStr(e.spliceTempTokenKey(service, tempToken))
+}
+
+func (e *Enforcer) getByTempToken(service string, tempToken string) string {
+	return e.adapter.GetStr(e.spliceTempTokenKey(service, tempToken))
+}
+
 // spliceSessionKey splice session-id key
 func (e *Enforcer) spliceSessionKey(id string) string {
 	return e.config.TokenName + ":" + e.loginType + ":session:" + id
 }
 
 // spliceTokenKey splice token-id key
-func (e *Enforcer) spliceTokenKey(id string) string {
-	return e.config.TokenName + ":" + e.loginType + ":token:" + id
+func (e *Enforcer) spliceTokenKey(token string) string {
+	return e.config.TokenName + ":" + e.loginType + ":token:" + token
 }
 
 func (e *Enforcer) spliceBannedKey(id string, service string) string {

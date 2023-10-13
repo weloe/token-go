@@ -7,7 +7,7 @@ import (
 	"sync"
 )
 
-type GenerateFunc func() (string, error)
+type HandlerFunc func() (string, error)
 
 type GenerateTokenFunc struct {
 	fns *sync.Map
@@ -28,7 +28,7 @@ func (g *GenerateTokenFunc) Exec(tokenForm string) (string, error) {
 	return s, nil
 }
 
-func (g *GenerateTokenFunc) GetFunction(tokenForm string) (GenerateFunc, error) {
+func (g *GenerateTokenFunc) GetFunction(tokenForm string) (HandlerFunc, error) {
 	value, ok := g.fns.Load(tokenForm)
 	if !ok {
 		return nil, errors.New("GetFunction() failed: load func error")
@@ -36,7 +36,7 @@ func (g *GenerateTokenFunc) GetFunction(tokenForm string) (GenerateFunc, error) 
 	if value == nil {
 		return nil, errors.New("GetFunction() failed: this tokenStyle generate func doesn't exist")
 	}
-	handlerFunc := value.(GenerateFunc)
+	handlerFunc := value.(HandlerFunc)
 	return handlerFunc, nil
 }
 
@@ -51,6 +51,6 @@ func LoadFunctionMap() GenerateTokenFunc {
 	return *fm
 }
 
-func (g *GenerateTokenFunc) AddFunc(key string, f GenerateFunc) {
+func (g *GenerateTokenFunc) AddFunc(key string, f HandlerFunc) {
 	g.fns.LoadOrStore(key, f)
 }
