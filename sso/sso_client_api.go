@@ -93,15 +93,15 @@ func (s *SsoEnforcer) SsoClientLogin(ctx ctx.Context) (interface{}, error) {
 	if loginId == "" {
 		return nil, errors.New("invalid ticket: " + ticket)
 	}
-	// login
-	_, err = s.enforcer.Login(loginId, ctx)
+	// login in client actually
+	token, err := s.enforcer.Login(loginId, ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	// redirect to back
 	response.Redirect(back)
-	return nil, nil
+	return model.Ok().SetData(token), nil
 }
 
 // SsoClientLogout SSO-Client single-logout.
@@ -188,7 +188,7 @@ func (s *SsoEnforcer) SsoClientLogoutCall(ctx ctx.Context) (interface{}, error) 
 		return nil, err
 	}
 	// logout
-	err = s.enforcer.Logout(ctx)
+	err = s.enforcer.LogoutById(loginId)
 	if err != nil {
 		return nil, err
 	}

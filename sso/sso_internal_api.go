@@ -100,6 +100,7 @@ func (s *SsoEnforcer) CheckTicketByClient(ticket string, client string) (string,
 		return "", nil
 	}
 
+	// get client from id
 	var ticketClient string
 	if strings.Contains(id, ",") {
 		split := strings.Split(id, ",")
@@ -155,10 +156,10 @@ func (s *SsoEnforcer) RegisterSloCallbackUrl(loginId string, sloCallbackUrl stri
 	var v []string
 	if value != nil {
 		sv, ok := value.([]string)
-		v = sv
 		if !ok {
 			return errors.New("session SLO_CALLBACK_SET_KEY_ data convert into []string failed")
 		}
+		v = sv
 	}
 	v = util.AppendStr(v, sloCallbackUrl)
 
