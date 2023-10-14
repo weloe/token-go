@@ -20,7 +20,7 @@ type TokenConfig struct {
 
 	// Allow multi login
 	IsConcurrent bool
-	// Multi loginShare same token
+	// Multi login share same token
 	IsShare bool
 	// If (IsConcurrent == true && IsShare == false), support MaxLoginCount
 	// If IsConcurrent == -1, do not need to check loginCount
