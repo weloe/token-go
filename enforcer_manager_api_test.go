@@ -55,15 +55,22 @@ func TestEnforcer_ConfirmQRCode(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Scanned() failed: %v", err)
 	}
+	if state := enforcer.GetQRCodeState(qrCodeId); state != model.WaitAuth {
+		t.Fatalf("After Scanned(), QRCode should be %v", model.WaitAuth)
+	}
 	t.Logf("After Scanned(), current QRCode state: %v", enforcer.GetQRCodeState(qrCodeId))
 	t.Logf("tempToken: %v", tempToken)
 	err = enforcer.ConfirmAuth(tempToken)
 	if err != nil {
 		t.Fatalf("ConfirmAuth() failed: %v", err)
 	}
+	if state := enforcer.GetQRCodeState(qrCodeId); state != model.ConfirmAuth {
+		t.Fatalf("After ConfirmAuth(), QRCode should be %v", model.ConfirmAuth)
+	}
 	t.Logf("After ConfirmAuth(), current QRCode state: %v", enforcer.GetQRCodeState(qrCodeId))
 	if enforcer.GetQRCodeState(qrCodeId) == model.ConfirmAuth {
-		t.Logf(" QRCode login successfully.")
+		loginId := enforcer.getQRCode(qrCodeId).LoginId
+		t.Logf("id: [%v] QRCode login successfully.", loginId)
 	}
 }
 
@@ -87,14 +94,21 @@ func TestEnforcer_CancelAuthQRCode(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Scanned() failed: %v", err)
 	}
+	if state := enforcer.GetQRCodeState(qrCodeId); state != model.WaitAuth {
+		t.Fatalf("After Scanned(), QRCode should be %v", model.WaitAuth)
+	}
 	t.Logf("After Scanned(), current QRCode state: %v", enforcer.GetQRCodeState(qrCodeId))
 	t.Logf("tempToken: %v", tempToken)
 	err = enforcer.CancelAuth(tempToken)
 	if err != nil {
 		t.Fatalf("CancelAuth() failed: %v", err)
 	}
+	if state := enforcer.GetQRCodeState(qrCodeId); state != model.CancelAuth {
+		t.Fatalf("After CancelAuth(), QRCode should be %v", model.CancelAuth)
+	}
 	t.Logf("After CancelAuth(), current QRCode state: %v", enforcer.GetQRCodeState(qrCodeId))
 	if enforcer.GetQRCodeState(qrCodeId) == model.CancelAuth {
-		t.Logf(" QRCode login is cancelled.")
+		loginId := enforcer.getQRCode(qrCodeId).LoginId
+		t.Logf(" id: [%v] QRCode login is cancelled.", loginId)
 	}
 }

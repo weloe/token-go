@@ -197,17 +197,19 @@ func (e *Enforcer) getQRCode(id string) *model.QRCode {
 	return i.(*model.QRCode)
 }
 
-func (e *Enforcer) getQRCodeTimeout(id string) int64 {
-	return e.adapter.GetTimeout(id)
+func (e *Enforcer) getAndCheckQRCodeState(QRCodeId string, want model.QRCodeState) (*model.QRCode, error) {
+	qrCode := e.getQRCode(QRCodeId)
+	if qrCode == nil {
+		return nil, fmt.Errorf("QRCode doesn't exist: %v", QRCodeId)
+	}
+	if s := e.GetQRCodeState(QRCodeId); s != want {
+		return nil, fmt.Errorf("QRCode %v state error: unexpected state value %v, want is %v", QRCodeId, s, want)
+	}
+	return qrCode, nil
 }
 
-func (e *Enforcer) updateQRCodeState(id string, state model.QRCodeState) error {
-	qrCode := e.getQRCode(id)
-	if qrCode == nil {
-		return fmt.Errorf("QRCode doesn't exist")
-	}
-	qrCode.State = state
-	return e.updateQRCode(id, qrCode)
+func (e *Enforcer) getQRCodeTimeout(id string) int64 {
+	return e.adapter.GetTimeout(id)
 }
 
 func (e *Enforcer) updateQRCode(id string, qrCode *model.QRCode) error {

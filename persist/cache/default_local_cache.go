@@ -1,7 +1,6 @@
 package cache
 
 import (
-	"errors"
 	"fmt"
 	"github.com/weloe/token-go/constant"
 	"sync"
@@ -55,7 +54,7 @@ func (c *DefaultLocalCache) assertTimeout(timeout int64) error {
 func (c *DefaultLocalCache) Update(key string, value interface{}) error {
 	timeout := c.GetTimeout(key)
 	if timeout == constant.NotValueExpire {
-		return errors.New("key does not exist")
+		return fmt.Errorf("key does not exist: %v ", key)
 	}
 	c.dataMap.Store(key, value)
 	return nil
