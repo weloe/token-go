@@ -70,6 +70,15 @@ type IEnforcer interface {
 	GetRequestToken(ctx ctx.Context) string
 	AddTokenGenerateFun(tokenStyle string, f model.HandlerFunc) error
 
+	// QRCode api
+	CreateQRCodeState(QRCodeId string, timeout int64) error
+	GetQRCode(QRCodeId string) *model.QRCode
+	GetQRCodeState(QRCodeId string) model.QRCodeState
+	GetQRCodeTimeout(QRCodeId string) int64
+	Scanned(QRCodeId string, token string) (string, error)
+	ConfirmAuth(QRCodeTempToken string) error
+	CancelAuth(QRCodeTempToken string) error
+
 	// Access control api
 	SetAuth(manager interface{})
 	CheckRole(ctx ctx.Context, role string) error

@@ -225,3 +225,99 @@ func (e *Enforcer) ParseTempToken(service string, tempToken string) string {
 func (e *Enforcer) DeleteTempToken(service string, tempToken string) error {
 	return e.deleteByTempToken(service, tempToken)
 }
+
+func (e *Enforcer) CreateQRCodeState(QRCodeId string, timeout int64) error {
+	return e.createQRCode(QRCodeId, timeout)
+}
+
+// Scanned update state to constant.WaitAuth, return tempToken
+func (e *Enforcer) Scanned(QRCodeId string, token string) (string, error) {
+	err := e.CheckLoginByToken(token)
+	if err != nil {
+		return "", err
+	}
+	err = e.CheckQRCodeState(QRCodeId, model.WaitScan)
+	if err != nil {
+		return "", err
+	}
+	err = e.updateQRCodeState(QRCodeId, model.WaitAuth)
+	if err != nil {
+		return "", err
+	}
+	tempToken, err := e.CreateTempToken(e.config.TokenStyle, "qrCode", QRCodeId, e.config.Timeout)
+	if err != nil {
+		return "", err
+	}
+	return tempToken, nil
+}
+
+// ConfirmAuth update state to constant.ConfirmAuth
+func (e *Enforcer) ConfirmAuth(tempToken string) error {
+	qrCodeId := e.ParseTempToken("qrCode", tempToken)
+	if qrCodeId == "" {
+		return fmt.Errorf("confirm failed, tempToken error: %v", tempToken)
+	}
+	err := e.CheckQRCodeState(qrCodeId, model.WaitAuth)
+	if err != nil {
+		return err
+	}
+	err = e.updateQRCodeState(qrCodeId, model.ConfirmAuth)
+	if err != nil {
+		return err
+	}
+	err = e.DeleteTempToken("qrCode", tempToken)
+	if err != nil {
+		return err
+	}
+	return err
+}
+
+// CancelAuth update state to constant.CancelAuth
+func (e *Enforcer) CancelAuth(tempToken string) error {
+	qrCodeId := e.ParseTempToken("qrCode", tempToken)
+	if qrCodeId == "" {
+		return fmt.Errorf("confirm failed, tempToken error: %v", qrCodeId)
+	}
+	err := e.CheckQRCodeState(qrCodeId, model.WaitAuth)
+	if err != nil {
+		return err
+	}
+	err = e.updateQRCodeState(qrCodeId, model.CancelAuth)
+	if err != nil {
+		return err
+	}
+	err = e.DeleteTempToken("qrCode", tempToken)
+	if err != nil {
+		return err
+	}
+	return err
+}
+
+func (e *Enforcer) GetQRCode(QRCodeId string) *model.QRCode {
+	return e.getQRCode(QRCodeId)
+}
+
+// GetQRCodeState
+//	WaitScan   = 1
+//	WaitAuth   = 2
+//	ConfirmAuth  = 3
+//	CancelAuth = 4
+//	Expired    = 5
+func (e *Enforcer) GetQRCodeState(QRCodeId string) model.QRCodeState {
+	qrCode := e.getQRCode(QRCodeId)
+	if qrCode == nil {
+		return model.Expired
+	}
+	return qrCode.State
+}
+
+func (e *Enforcer) GetQRCodeTimeout(QRCodeId string) int64 {
+	return e.getQRCodeTimeout(QRCodeId)
+}
+
+func (e *Enforcer) CheckQRCodeState(QRCodeId string, want model.QRCodeState) error {
+	if s := e.GetQRCodeState(QRCodeId); s != want {
+		return fmt.Errorf("QRCode state error: unexpected state value %v, want is %v", s, want)
+	}
+	return nil
+}

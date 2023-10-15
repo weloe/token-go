@@ -1,10 +1,12 @@
 package token_go
 
 import (
+	"fmt"
 	"github.com/weloe/token-go/constant"
 	"github.com/weloe/token-go/ctx"
 	"github.com/weloe/token-go/errors"
 	"github.com/weloe/token-go/model"
+	"github.com/weloe/token-go/util"
 	"math"
 	"strconv"
 )
@@ -183,6 +185,35 @@ func (e *Enforcer) deleteByTempToken(service string, tempToken string) error {
 	return e.adapter.DeleteStr(e.spliceTempTokenKey(service, tempToken))
 }
 
+func (e *Enforcer) createQRCode(id string, timeout int64) error {
+	return e.adapter.Set(e.spliceQRCodeKey(id), model.NewQRCode(id), timeout)
+}
+
+func (e *Enforcer) getQRCode(id string) *model.QRCode {
+	i := e.adapter.Get(e.spliceQRCodeKey(id), util.GetType(&model.QRCode{}))
+	if i == nil {
+		return nil
+	}
+	return i.(*model.QRCode)
+}
+
+func (e *Enforcer) getQRCodeTimeout(id string) int64 {
+	return e.adapter.GetTimeout(id)
+}
+
+func (e *Enforcer) updateQRCodeState(id string, state model.QRCodeState) error {
+	qrCode := e.getQRCode(id)
+	if qrCode == nil {
+		return fmt.Errorf("QRCode doesn't exist")
+	}
+	qrCode.State = state
+	return e.updateQRCode(id, qrCode)
+}
+
+func (e *Enforcer) updateQRCode(id string, qrCode *model.QRCode) error {
+	return e.adapter.Update(e.spliceQRCodeKey(id), qrCode)
+}
+
 func (e *Enforcer) getByTempToken(service string, tempToken string) string {
 	return e.adapter.GetStr(e.spliceTempTokenKey(service, tempToken))
 }
@@ -207,6 +238,10 @@ func (e *Enforcer) spliceSecSafeKey(token string, service string) string {
 
 func (e *Enforcer) spliceTempTokenKey(service string, token string) string {
 	return e.config.TokenName + ":" + "temp-token" + ":temp:" + service + ":" + token
+}
+
+func (e *Enforcer) spliceQRCodeKey(QRCodeId string) string {
+	return e.config.TokenName + ":" + "QRCode" + ":QRCode" + QRCodeId
 }
 
 func (e *Enforcer) SetJwtSecretKey(key string) {
