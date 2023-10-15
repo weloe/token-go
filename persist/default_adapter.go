@@ -11,15 +11,17 @@ import (
 )
 
 type DefaultAdapter struct {
-	cache      cache.Cache
-	serializer Serializer
+	cache              cache.Cache
+	serializer         Serializer
+	enableRefreshTimer bool
 }
 
 var _ Adapter = (*DefaultAdapter)(nil)
 
 func NewDefaultAdapter() *DefaultAdapter {
 	return &DefaultAdapter{
-		cache: cache.NewDefaultLocalCache(),
+		cache:              cache.NewDefaultLocalCache(),
+		enableRefreshTimer: true,
 	}
 }
 
@@ -133,10 +135,18 @@ func (d *DefaultAdapter) DeleteBatchFilteredKey(keyPrefix string) error {
 	return err
 }
 
-func (d *DefaultAdapter) EnableCleanTimer(period int64) error {
+func (d *DefaultAdapter) EnableCleanTimer(b bool) {
+	d.enableRefreshTimer = b
+}
+
+func (d *DefaultAdapter) GetCleanTimer() bool {
+	return d.enableRefreshTimer
+}
+
+func (d *DefaultAdapter) StartCleanTimer(period int64) error {
 	cacheEx, ok := d.cache.(cache.CacheEx)
 	if !ok {
-		return errors.New("the cache does not implement the EnableCleanTimer method")
+		return errors.New("the Cache does not implement the StartCleanTimer method")
 	}
 	cacheEx.EnableCleanTimer(period)
 	return nil

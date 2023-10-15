@@ -12,7 +12,7 @@ type DefaultLogger struct {
 }
 
 func (d *DefaultLogger) StartCleanTimer(period int64) {
-	log.Printf("timer period = %v, timer start", period)
+	log.Printf("timer period = %v, adapter data clean timer start", period)
 }
 
 func (d *DefaultLogger) Enable(bool bool) {

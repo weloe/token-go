@@ -101,9 +101,12 @@ func InitWithConfig(tokenConfig *config.TokenConfig, adapter persist.Adapter) (*
 func (e *Enforcer) startCleanTimer() {
 	defaultAdapter, ok := e.adapter.(*persist.DefaultAdapter)
 	if ok {
+		if !defaultAdapter.GetCleanTimer() {
+			return
+		}
 		dataRefreshPeriod := e.config.DataRefreshPeriod
 		if period := dataRefreshPeriod; period >= 0 {
-			err := defaultAdapter.EnableCleanTimer(dataRefreshPeriod)
+			err := defaultAdapter.StartCleanTimer(dataRefreshPeriod)
 			if err != nil {
 				log2.Printf("enble adapter cleanTimer failed: %v", err)
 				return
