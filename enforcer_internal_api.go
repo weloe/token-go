@@ -209,11 +209,15 @@ func (e *Enforcer) getAndCheckQRCodeState(QRCodeId string, want model.QRCodeStat
 }
 
 func (e *Enforcer) getQRCodeTimeout(id string) int64 {
-	return e.adapter.GetTimeout(id)
+	return e.adapter.GetTimeout(e.spliceQRCodeKey(id))
 }
 
 func (e *Enforcer) updateQRCode(id string, qrCode *model.QRCode) error {
 	return e.adapter.Update(e.spliceQRCodeKey(id), qrCode)
+}
+
+func (e *Enforcer) deleteQRCode(id string) error {
+	return e.adapter.Delete(e.spliceQRCodeKey(id))
 }
 
 func (e *Enforcer) getByTempToken(service string, tempToken string) string {

@@ -75,6 +75,7 @@ type IEnforcer interface {
 	GetQRCode(QRCodeId string) *model.QRCode
 	GetQRCodeState(QRCodeId string) model.QRCodeState
 	GetQRCodeTimeout(QRCodeId string) int64
+	DeleteQRCode(QRCodeId string) error
 	Scanned(QRCodeId string, loginId string) (string, error)
 	ConfirmAuth(QRCodeTempToken string) error
 	CancelAuth(QRCodeTempToken string) error

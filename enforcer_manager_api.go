@@ -319,3 +319,7 @@ func (e *Enforcer) GetQRCodeState(QRCodeId string) model.QRCodeState {
 func (e *Enforcer) GetQRCodeTimeout(QRCodeId string) int64 {
 	return e.getQRCodeTimeout(QRCodeId)
 }
+
+func (e *Enforcer) DeleteQRCode(QRCodeId string) error {
+	return e.deleteQRCode(QRCodeId)
+}
