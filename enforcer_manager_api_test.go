@@ -122,3 +122,24 @@ func TestEnforcer_CancelAuthQRCode(t *testing.T) {
 		t.Logf(" id: [%v] QRCode login is cancelled.", loginId)
 	}
 }
+
+func TestEnforcer_QRCodeState(t *testing.T) {
+	enforcer, _ := NewTestEnforcer(t)
+	QRCodeId := "1"
+	err := enforcer.CreateQRCodeState(QRCodeId, -1)
+	if err != nil {
+		t.Fatalf("CreateQRCodeState() failed: %v", err)
+	}
+	if timeout := enforcer.getQRCodeTimeout(QRCodeId); timeout != -1 {
+		t.Fatalf("timeout error, want is -1")
+	}
+	err = enforcer.DeleteQRCode(QRCodeId)
+	if err != nil {
+		t.Fatalf("DeleteQRCode() failed: %v", err)
+
+	}
+	state := enforcer.GetQRCodeState(QRCodeId)
+	if state != model.Expired {
+		t.Fatalf("QR code state error, want is %v", model.Expired)
+	}
+}
