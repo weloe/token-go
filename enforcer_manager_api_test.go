@@ -38,7 +38,8 @@ func TestEnforcer_TempToken(t *testing.T) {
 func TestEnforcer_ConfirmQRCode(t *testing.T) {
 	enforcer, _ := NewTestEnforcer(t)
 	// in APP
-	token, err := enforcer.LoginById("1")
+	loginId := "1"
+	token, err := enforcer.LoginById(loginId)
 	if err != nil {
 		t.Fatalf("Login failed: %v", err)
 	}
@@ -51,7 +52,11 @@ func TestEnforcer_ConfirmQRCode(t *testing.T) {
 		t.Fatalf("CreateQRCodeState() failed: %v", err)
 	}
 	t.Logf("After CreateQRCodeState(), current QRCode state: %v", enforcer.GetQRCodeState(qrCodeId))
-	tempToken, err := enforcer.Scanned(qrCodeId, token)
+	loginIdByToken, err := enforcer.GetLoginIdByToken(token)
+	if err != nil {
+		t.Fatalf("GetLoginIdByToken() failed: %v", err)
+	}
+	tempToken, err := enforcer.Scanned(qrCodeId, loginIdByToken)
 	if err != nil {
 		t.Fatalf("Scanned() failed: %v", err)
 	}
@@ -77,7 +82,8 @@ func TestEnforcer_ConfirmQRCode(t *testing.T) {
 func TestEnforcer_CancelAuthQRCode(t *testing.T) {
 	enforcer, _ := NewTestEnforcer(t)
 	// in APP
-	token, err := enforcer.LoginById("1")
+	loginId := "1"
+	token, err := enforcer.LoginById(loginId)
 	if err != nil {
 		t.Fatalf("Login failed: %v", err)
 	}
@@ -90,7 +96,11 @@ func TestEnforcer_CancelAuthQRCode(t *testing.T) {
 		t.Fatalf("CreateQRCodeState() failed: %v", err)
 	}
 	t.Logf("After CreateQRCodeState(), current QRCode state: %v", enforcer.GetQRCodeState(qrCodeId))
-	tempToken, err := enforcer.Scanned(qrCodeId, token)
+	loginIdByToken, err := enforcer.GetLoginIdByToken(token)
+	if err != nil {
+		t.Fatalf("GetLoginIdByToken() failed: %v", err)
+	}
+	tempToken, err := enforcer.Scanned(qrCodeId, loginIdByToken)
 	if err != nil {
 		t.Fatalf("Scanned() failed: %v", err)
 	}

@@ -231,11 +231,7 @@ func (e *Enforcer) CreateQRCodeState(QRCodeId string, timeout int64) error {
 }
 
 // Scanned update state to constant.WaitAuth, return tempToken
-func (e *Enforcer) Scanned(QRCodeId string, token string) (string, error) {
-	id, err := e.GetLoginIdByToken(token)
-	if err != nil {
-		return "", err
-	}
+func (e *Enforcer) Scanned(QRCodeId string, loginId string) (string, error) {
 	qrCode := e.getQRCode(QRCodeId)
 	if qrCode == nil {
 		return "", fmt.Errorf("QRCode doesn't exist")
@@ -244,9 +240,9 @@ func (e *Enforcer) Scanned(QRCodeId string, token string) (string, error) {
 		return "", fmt.Errorf("QRCode state error: unexpected state value %v, want is %v", qrCode.State, model.WaitScan)
 	}
 	qrCode.State = model.WaitAuth
-	qrCode.LoginId = id
+	qrCode.LoginId = loginId
 
-	err = e.updateQRCode(QRCodeId, qrCode)
+	err := e.updateQRCode(QRCodeId, qrCode)
 	if err != nil {
 		return "", err
 	}
