@@ -22,7 +22,21 @@ type Enforcer struct {
 	adapter      persist.Adapter
 	watcher      persist.Watcher
 	logger       log.Logger
-	authManager  interface{}
+
+	dispatcher       persist.Dispatcher
+	notifyDispatcher bool
+
+	updatableWatcher       persist.UpdatableWatcher
+	notifyUpdatableWatcher bool
+
+	authManager interface{}
+}
+
+func (e *Enforcer) EnableUpdatableWatcher(b bool) {
+	if e.updatableWatcher == nil {
+		return
+	}
+	e.notifyUpdatableWatcher = b
 }
 
 func NewDefaultAdapter() persist.Adapter {
@@ -482,7 +496,7 @@ func (e *Enforcer) GetSession(id string) *model.Session {
 }
 
 func (e *Enforcer) SetSession(id string, session *model.Session, timeout int64) error {
-	err := e.adapter.Set(e.spliceSessionKey(id), session, timeout)
+	err := e.notifySet(e.spliceSessionKey(id), session, timeout)
 	if err != nil {
 		return err
 	}
@@ -490,7 +504,7 @@ func (e *Enforcer) SetSession(id string, session *model.Session, timeout int64) 
 }
 
 func (e *Enforcer) DeleteSession(id string) error {
-	err := e.adapter.Delete(e.spliceSessionKey(id))
+	err := e.notifyDelete(e.spliceSessionKey(id))
 	if err != nil {
 		return err
 	}
@@ -498,7 +512,7 @@ func (e *Enforcer) DeleteSession(id string) error {
 }
 
 func (e *Enforcer) UpdateSession(id string, session *model.Session) error {
-	err := e.adapter.Update(e.spliceSessionKey(id), session)
+	err := e.notifyUpdate(e.spliceSessionKey(id), session)
 	if err != nil {
 		return err
 	}

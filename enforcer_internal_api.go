@@ -114,7 +114,7 @@ func (e *Enforcer) checkId(str string) (bool, error) {
 }
 
 func (e *Enforcer) SetIdByToken(id string, tokenValue string, timeout int64) error {
-	err := e.adapter.SetStr(e.spliceTokenKey(tokenValue), id, timeout)
+	err := e.notifySetStr(e.spliceTokenKey(tokenValue), id, timeout)
 	return err
 }
 
@@ -123,22 +123,22 @@ func (e *Enforcer) getIdByToken(token string) string {
 }
 
 func (e *Enforcer) deleteIdByToken(tokenValue string) error {
-	err := e.adapter.DeleteStr(e.spliceTokenKey(tokenValue))
+	err := e.notifyDelete(e.spliceTokenKey(tokenValue))
 	return err
 }
 
 func (e *Enforcer) updateIdByToken(tokenValue string, id string) error {
-	err := e.adapter.UpdateStr(e.spliceTokenKey(tokenValue), id)
+	err := e.notifyUpdateStr(e.spliceTokenKey(tokenValue), id)
 	return err
 }
 
 func (e *Enforcer) setBanned(id string, service string, level int, time int64) error {
-	err := e.adapter.SetStr(e.spliceBannedKey(id, service), strconv.Itoa(level), time)
+	err := e.notifySetStr(e.spliceBannedKey(id, service), strconv.Itoa(level), time)
 	return err
 }
 
 func (e *Enforcer) deleteBanned(id string, service string) error {
-	err := e.adapter.DeleteStr(e.spliceBannedKey(id, service))
+	err := e.notifyDelete(e.spliceBannedKey(id, service))
 	return err
 }
 
@@ -153,7 +153,7 @@ func (e *Enforcer) getBannedTime(id string, service string) int64 {
 }
 
 func (e *Enforcer) setSecSafe(token string, service string, time int64) error {
-	err := e.adapter.SetStr(e.spliceSecSafeKey(token, service), constant.DefaultSecondAuthValue, time)
+	err := e.notifySetStr(e.spliceSecSafeKey(token, service), constant.DefaultSecondAuthValue, time)
 	return err
 }
 
@@ -168,12 +168,12 @@ func (e *Enforcer) getSecSafe(token string, service string) string {
 }
 
 func (e *Enforcer) deleteSecSafe(token string, service string) error {
-	err := e.adapter.DeleteStr(e.spliceSecSafeKey(token, service))
+	err := e.notifyDelete(e.spliceSecSafeKey(token, service))
 	return err
 }
 
 func (e *Enforcer) setTempToken(service string, token string, value string, timeout int64) error {
-	err := e.adapter.SetStr(e.spliceTempTokenKey(service, token), value, timeout)
+	err := e.notifySetStr(e.spliceTempTokenKey(service, token), value, timeout)
 	return err
 }
 
@@ -182,11 +182,11 @@ func (e *Enforcer) getTimeoutByTempToken(service string, token string) int64 {
 }
 
 func (e *Enforcer) deleteByTempToken(service string, tempToken string) error {
-	return e.adapter.DeleteStr(e.spliceTempTokenKey(service, tempToken))
+	return e.notifyDelete(e.spliceTempTokenKey(service, tempToken))
 }
 
 func (e *Enforcer) createQRCode(id string, timeout int64) error {
-	return e.adapter.Set(e.spliceQRCodeKey(id), model.NewQRCode(id), timeout)
+	return e.notifySet(e.spliceQRCodeKey(id), model.NewQRCode(id), timeout)
 }
 
 func (e *Enforcer) getQRCode(id string) *model.QRCode {
@@ -213,11 +213,11 @@ func (e *Enforcer) getQRCodeTimeout(id string) int64 {
 }
 
 func (e *Enforcer) updateQRCode(id string, qrCode *model.QRCode) error {
-	return e.adapter.Update(e.spliceQRCodeKey(id), qrCode)
+	return e.notifyUpdate(e.spliceQRCodeKey(id), qrCode)
 }
 
 func (e *Enforcer) deleteQRCode(id string) error {
-	return e.adapter.Delete(e.spliceQRCodeKey(id))
+	return e.notifyDelete(e.spliceQRCodeKey(id))
 }
 
 func (e *Enforcer) getByTempToken(service string, tempToken string) string {
@@ -252,4 +252,108 @@ func (e *Enforcer) spliceQRCodeKey(QRCodeId string) string {
 
 func (e *Enforcer) SetJwtSecretKey(key string) {
 	e.config.JwtSecretKey = key
+}
+
+func (e *Enforcer) notifySetStr(key string, value string, timeout int64) error {
+	if e.shouldNotifyDispatcher() {
+		return e.dispatcher.SetAllStr(key, value, timeout)
+	}
+	err := e.adapter.SetStr(key, value, timeout)
+	if err != nil {
+		return err
+	}
+	if e.shouldNotifyUpdatableWatcher() {
+		return e.updatableWatcher.UpdateForSetStr(key, value, timeout)
+	}
+	return nil
+}
+
+func (e *Enforcer) notifyUpdateStr(key string, value string) error {
+	if e.shouldNotifyDispatcher() {
+		return e.dispatcher.UpdateAllStr(key, value)
+	}
+	err := e.adapter.UpdateStr(key, value)
+	if err != nil {
+		return err
+	}
+	if e.shouldNotifyUpdatableWatcher() {
+		return e.updatableWatcher.UpdateForUpdateStr(key, value)
+	}
+	return nil
+}
+
+func (e *Enforcer) notifySet(key string, value interface{}, timeout int64) error {
+	if e.shouldNotifyDispatcher() {
+		return e.dispatcher.SetAll(key, value, timeout)
+	}
+	err := e.adapter.Set(key, value, timeout)
+	if err != nil {
+		return err
+	}
+	if e.shouldNotifyUpdatableWatcher() {
+		return e.updatableWatcher.UpdateForSet(key, value, timeout)
+	}
+	return nil
+}
+
+func (e *Enforcer) notifyUpdate(key string, value interface{}) error {
+	if e.shouldNotifyDispatcher() {
+		return e.dispatcher.UpdateAll(key, value)
+	}
+	err := e.adapter.Update(key, value)
+	if err != nil {
+		return err
+	}
+	if e.shouldNotifyUpdatableWatcher() {
+		return e.updatableWatcher.UpdateForUpdate(key, value)
+	}
+	return nil
+}
+
+func (e *Enforcer) notifyDelete(key string) error {
+	if e.shouldNotifyDispatcher() {
+		return e.dispatcher.DeleteAll(key)
+	}
+	err := e.adapter.Delete(key)
+	if err != nil {
+		return err
+	}
+	if e.shouldNotifyUpdatableWatcher() {
+		return e.updatableWatcher.UpdateForDelete(key)
+	}
+	return nil
+}
+
+// nolint:golint,unused
+func (e *Enforcer) notifyUpdateTimeout(key string, timeout int64) error {
+	if e.shouldNotifyDispatcher() {
+		return e.dispatcher.UpdateAllTimeout(key, timeout)
+	}
+	err := e.adapter.UpdateTimeout(key, timeout)
+	if err != nil {
+		return err
+	}
+	if e.shouldNotifyUpdatableWatcher() {
+		return e.updatableWatcher.UpdateForUpdateTimeout(key, timeout)
+	}
+	return nil
+}
+
+func (e *Enforcer) shouldNotifyDispatcher() bool {
+	if e.dispatcher != nil && e.notifyDispatcher {
+		return true
+	}
+	return false
+}
+
+func (e *Enforcer) shouldNotifyUpdatableWatcher() bool {
+	if e.updatableWatcher != nil && e.notifyUpdatableWatcher {
+		return true
+	}
+	return false
+}
+
+// nolint:golint,unused
+func (e *Enforcer) shouldPersist() bool {
+	return e.adapter != nil
 }

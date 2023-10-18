@@ -91,3 +91,21 @@ type IEnforcer interface {
 	UpdateSession(id string, session *model.Session) error
 	SetSession(id string, session *model.Session, timeout int64) error
 }
+
+var _ IDistributedEnforcer = &DistributedEnforcer{}
+
+type IDistributedEnforcer interface {
+	IEnforcer
+	// SetStrSelf store string in all instances
+	SetStrSelf(key string, value string, timeout int64) error
+	// UpdateStrSelf only update string value in all instances
+	UpdateStrSelf(key string, value string) error
+	// SetSelf store interface{} in all instances
+	SetSelf(key string, value interface{}, timeout int64) error
+	// UpdateSelf only update interface{} value in all instances
+	UpdateSelf(key string, value interface{}) error
+	// DeleteSelf delete interface{} value in all instances
+	DeleteSelf(key string) error
+	// UpdateTimeoutSelf update timeout in all instances
+	UpdateTimeoutSelf(key string, timeout int64) error
+}
