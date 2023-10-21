@@ -1,6 +1,7 @@
 package token_go
 
 import (
+	"container/list"
 	"fmt"
 	"github.com/weloe/token-go/constant"
 	"github.com/weloe/token-go/model"
@@ -8,11 +9,16 @@ import (
 )
 
 // Replaced replace other user
-func (e *Enforcer) Replaced(id string, device string) error {
+func (e *Enforcer) Replaced(id string, device ...string) error {
 	var err error
 	if session := e.GetSession(id); session != nil {
-		// get by login device
-		tokenSignList := session.GetFilterTokenSign(device)
+		var tokenSignList *list.List
+		if len(device) == 0 {
+			tokenSignList = session.GetTokenSignListCopy()
+		} else {
+			// get by login device
+			tokenSignList = session.GetFilterTokenSign(device[0])
+		}
 		// sign account replaced
 		for element := tokenSignList.Front(); element != nil; element = element.Next() {
 			if tokenSign, ok := element.Value.(*model.TokenSign); ok {
@@ -42,11 +48,17 @@ func (e *Enforcer) Replaced(id string, device string) error {
 }
 
 // Kickout kickout user
-func (e *Enforcer) Kickout(id string, device string) error {
+func (e *Enforcer) Kickout(id string, device ...string) error {
 	session := e.GetSession(id)
 	if session != nil {
-		// get by login device
-		tokenSignList := session.GetFilterTokenSign(device)
+		var tokenSignList *list.List
+		if len(device) == 0 {
+			tokenSignList = session.GetTokenSignListCopy()
+		} else {
+			// get by login device
+			tokenSignList = session.GetFilterTokenSign(device[0])
+		}
+
 		// sign account kicked
 		for element := tokenSignList.Front(); element != nil; element = element.Next() {
 			if tokenSign, ok := element.Value.(*model.TokenSign); ok {

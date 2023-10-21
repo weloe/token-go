@@ -48,8 +48,8 @@ type IEnforcer interface {
 	GetLoginCounts() (int, error)
 	GetLoginTokenCounts() (int, error)
 
-	Kickout(id string, device string) error
-	Replaced(id string, device string) error
+	Kickout(id string, device ...string) error
+	Replaced(id string, device ...string) error
 
 	// Banned banned api
 	Banned(id string, service string, level int, time int64) error
