@@ -202,7 +202,7 @@ func (e *Enforcer) LoginByModel(id string, loginModel *model.Login, ctx ctx.Cont
 
 	// allocate token
 	tokenValue, err = e.createLoginToken(id, loginModel)
-
+	device := loginModel.Device
 	if err != nil {
 		return "", err
 	}
@@ -213,7 +213,7 @@ func (e *Enforcer) LoginByModel(id string, loginModel *model.Login, ctx ctx.Cont
 	}
 	session.AddTokenSign(&model.TokenSign{
 		Value:  tokenValue,
-		Device: loginModel.Device,
+		Device: device,
 	})
 
 	timeout := loginModel.Timeout
@@ -237,7 +237,7 @@ func (e *Enforcer) LoginByModel(id string, loginModel *model.Login, ctx ctx.Cont
 
 	// called watcher
 	m := &model.Login{
-		Device:          loginModel.Device,
+		Device:          device,
 		IsLastingCookie: loginModel.IsLastingCookie,
 		Timeout:         timeout,
 		JwtData:         loginModel.JwtData,
@@ -252,14 +252,17 @@ func (e *Enforcer) LoginByModel(id string, loginModel *model.Login, ctx ctx.Cont
 		e.watcher.Login(e.loginType, id, tokenValue, m)
 	}
 
-	// if login success check it
-	if tokenConfig.IsConcurrent && !tokenConfig.IsShare {
-		// check if the number of sessions for this account exceeds the maximum limit.
-		if tokenConfig.MaxLoginCount != -1 {
-			if session = e.GetSession(id); session != nil {
-				// logout account until loginCount == maxLoginCount if loginCount > maxLoginCount
-				for _, tokenSign := range session.TokenSignList {
-					if session.TokenSignSize() > int(tokenConfig.MaxLoginCount) {
+	if device != "" && tokenConfig.DeviceMaxLoginCount != -1 {
+		if session = e.GetSession(id); session != nil {
+			// get by login device
+			tokenSignList := session.GetFilterTokenSign(device)
+			if tokenSignList.Len() <= int(tokenConfig.DeviceMaxLoginCount) {
+				return tokenValue, nil
+			}
+			//  if loginCount > maxLoginCount, logout account until single device Login count is equal to DeviceMaxLoginCount
+			for element := tokenSignList.Front(); element != nil; element = element.Next() {
+				if tokenSign, ok := element.Value.(*model.TokenSign); ok {
+					if session.TokenSignSize() > int(tokenConfig.DeviceMaxLoginCount) {
 						// delete tokenSign
 						tokenSignValue := tokenSign.Value
 						session.RemoveTokenSign(tokenSignValue)
@@ -272,19 +275,61 @@ func (e *Enforcer) LoginByModel(id string, loginModel *model.Login, ctx ctx.Cont
 						if err != nil {
 							return "", err
 						}
-					}
-				}
+						e.logger.Logout(e.loginType, id, tokenSignValue)
 
-				// check TokenSignList length, if length == 0, delete this session
-				if session != nil && session.TokenSignSize() == 0 {
-					err = e.DeleteSession(id)
-					if err != nil {
-						return "", err
+						if e.watcher != nil {
+							e.watcher.Logout(e.loginType, id, tokenSignValue)
+						}
 					}
 				}
 			}
+			// check TokenSignList length, if length == 0, delete this session
+			if session != nil && session.TokenSignSize() == 0 {
+				err = e.DeleteSession(id)
+				if err != nil {
+					return "", err
+				}
+			}
 		}
+	}
 
+	// check if the number of sessions for this account exceeds the maximum limit.
+	if tokenConfig.MaxLoginCount != -1 {
+		if session = e.GetSession(id); session != nil {
+			if session.TokenSignSize() <= int(tokenConfig.MaxLoginCount) {
+				return tokenValue, nil
+			}
+			// logout account until loginCount == maxLoginCount if loginCount > maxLoginCount
+			for _, tokenSign := range session.TokenSignList {
+				if session.TokenSignSize() > int(tokenConfig.MaxLoginCount) {
+					// delete tokenSign
+					tokenSignValue := tokenSign.Value
+					session.RemoveTokenSign(tokenSignValue)
+					err = e.UpdateSession(id, session)
+					if err != nil {
+						return "", err
+					}
+					// delete token-id
+					err = e.deleteIdByToken(tokenSignValue)
+					if err != nil {
+						return "", err
+					}
+					e.logger.Logout(e.loginType, id, tokenSignValue)
+
+					if e.watcher != nil {
+						e.watcher.Logout(e.loginType, id, tokenSignValue)
+					}
+				}
+			}
+
+			// check TokenSignList length, if length == 0, delete this session
+			if session != nil && session.TokenSignSize() == 0 {
+				err = e.DeleteSession(id)
+				if err != nil {
+					return "", err
+				}
+			}
+		}
 	}
 
 	return tokenValue, nil

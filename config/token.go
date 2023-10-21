@@ -25,6 +25,8 @@ type TokenConfig struct {
 	// If (IsConcurrent == true && IsShare == false), support MaxLoginCount
 	// If IsConcurrent == -1, do not need to check loginCount
 	MaxLoginCount int16
+	// Maximum number of logins per device
+	DeviceMaxLoginCount int16
 
 	// Read token method
 	// Set to true to read token from these method before login.
@@ -62,6 +64,7 @@ func DefaultTokenConfig() *TokenConfig {
 		IsConcurrent:           true,
 		IsShare:                true,
 		MaxLoginCount:          12,
+		DeviceMaxLoginCount:    12,
 		IsReadBody:             true,
 		IsReadHeader:           true,
 		IsReadCookie:           true,
