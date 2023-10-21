@@ -533,3 +533,27 @@ func (e *Enforcer) UpdateSession(id string, session *model.Session) error {
 func (e *Enforcer) GetTokenConfig() config.TokenConfig {
 	return e.config
 }
+
+func (e *Enforcer) GetLoginCounts() (int, error) {
+	adapter, ok := e.adapter.(persist.BatchAdapter)
+	if !ok {
+		return 0, fmt.Errorf("the adapter does not implement persist.BatchAdapter")
+	}
+	c, err := adapter.GetCountsFilteredKey(e.spliceSessionKey(""))
+	if err != nil {
+		return 0, err
+	}
+	return c, nil
+}
+
+func (e *Enforcer) GetLoginTokenCounts() (int, error) {
+	adapter, ok := e.adapter.(persist.BatchAdapter)
+	if !ok {
+		return 0, fmt.Errorf("the adapter does not implement persist.BatchAdapter")
+	}
+	c, err := adapter.GetCountsFilteredKey(e.spliceTokenKey(""))
+	if err != nil {
+		return 0, err
+	}
+	return c, nil
+}

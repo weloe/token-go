@@ -135,6 +135,21 @@ func (d *DefaultAdapter) DeleteBatchFilteredKey(keyPrefix string) error {
 	return err
 }
 
+func (d *DefaultAdapter) GetCountsFilteredKey(keyPrefix string) (int, error) {
+	cacheEx, ok := d.cache.(cache.CacheEx)
+	if !ok {
+		return 0, errors.New("the cache does not implement the Range method")
+	}
+	var counts int
+	cacheEx.Range(func(key, value any) bool {
+		if strings.HasPrefix(key.(string), keyPrefix) {
+			counts++
+		}
+		return true
+	})
+	return counts, nil
+}
+
 func (d *DefaultAdapter) EnableCleanTimer(b bool) {
 	d.enableRefreshTimer = b
 }

@@ -45,6 +45,9 @@ type IEnforcer interface {
 	GetIdByToken(token string) string
 	GetLoginCount(id string) int
 
+	GetLoginCounts() (int, error)
+	GetLoginTokenCounts() (int, error)
+
 	Kickout(id string, device string) error
 	Replaced(id string, device string) error
 
