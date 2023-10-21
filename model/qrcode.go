@@ -12,12 +12,12 @@ const (
 )
 
 type QRCode struct {
-	id      string
+	Id      string
 	State   QRCodeState
 	LoginId string
 	Ticket  string
 }
 
 func NewQRCode(id string) *QRCode {
-	return &QRCode{id: id, State: WaitScan}
+	return &QRCode{Id: id, State: WaitScan}
 }
