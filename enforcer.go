@@ -154,6 +154,14 @@ func (e *Enforcer) SetWatcher(watcher persist.Watcher) {
 	e.watcher = watcher
 }
 
+func (e *Enforcer) SetUpdatableWatcher(watcher persist.UpdatableWatcher) {
+	e.updatableWatcher = watcher
+}
+
+func (e *Enforcer) GetUpdatableWatcher() persist.UpdatableWatcher {
+	return e.updatableWatcher
+}
+
 func (e *Enforcer) GetLogger() log.Logger {
 	return e.logger
 }
