@@ -177,8 +177,8 @@ func TestEnforcer_Login(t *testing.T) {
 	if err != nil {
 		t.Errorf("LoginByModel() failed: %v", err)
 	}
-
-	_, err = enforcer.LoginByModel(loginId, model.DefaultLoginModel(), ctx)
+	loginModel := model.DefaultLoginModel()
+	_, err = enforcer.LoginByModel(loginId, loginModel, ctx)
 	if err != nil {
 		t.Errorf("LoginByModel() failed: %v", err)
 	}
@@ -189,7 +189,7 @@ func TestEnforcer_Login(t *testing.T) {
 	if !login {
 		t.Errorf("IsLoginById() failed: IsLoginById() = %v", login)
 	}
-	err = enforcer.Replaced("1", "")
+	err = enforcer.Replaced("1", loginModel.Device)
 	if err != nil {
 		t.Errorf("Replaced() failed: %v", err)
 	}
@@ -279,7 +279,7 @@ func TestEnforcer_Kickout(t *testing.T) {
 		t.Errorf("Login() failed: %v", err)
 	}
 
-	err = enforcer.Kickout("id", "")
+	err = enforcer.Kickout("id")
 	if err != nil {
 		t.Errorf("Kickout() failed %v", err)
 	}
