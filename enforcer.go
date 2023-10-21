@@ -155,7 +155,10 @@ func (e *Enforcer) SetWatcher(watcher persist.Watcher) {
 }
 
 func (e *Enforcer) SetUpdatableWatcher(watcher persist.UpdatableWatcher) {
-	e.updatableWatcher = watcher
+	if watcher != nil {
+		e.updatableWatcher = watcher
+		e.notifyUpdatableWatcher = true
+	}
 }
 
 func (e *Enforcer) GetUpdatableWatcher() persist.UpdatableWatcher {
