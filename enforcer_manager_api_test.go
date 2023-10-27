@@ -2,15 +2,19 @@ package token_go
 
 import (
 	"github.com/weloe/token-go/model"
+	"reflect"
 	"testing"
 )
 
 func TestEnforcer_TempToken(t *testing.T) {
 	enforcer, _ := NewTestEnforcer(t)
 	service := "code"
-	tempToken, err := enforcer.CreateTempToken("uuid", service, "1234", -1)
+	tempToken, err := enforcer.CreateTempToken("tempToken", service, "1234", -1)
 	if err != nil {
 		t.Fatalf("CreateTempToken() failed: %v", err)
+	}
+	if !reflect.DeepEqual(tempToken, "tempToken") {
+		t.Fatalf("token error, want is %v", "1234")
 	}
 	timeout := enforcer.GetTempTokenTimeout(service, tempToken)
 	if timeout != -1 {
@@ -32,6 +36,16 @@ func TestEnforcer_TempToken(t *testing.T) {
 	codeValue = enforcer.ParseTempToken(service, tempToken)
 	if codeValue != "" {
 		t.Errorf("ParseTempToken() failed, unexpected codeValue: %v", codeValue)
+	}
+
+	// create token
+	tempToken, err = enforcer.CreateTempTokenByStyle("uuid", service, "1234", -1)
+	if err != nil {
+		t.Fatalf("CreateTempTokenByStyle() failed: %v", err)
+	}
+	// delete
+	if enforcer.DeleteTempToken(service, tempToken) != nil {
+		t.Fatalf("DeleteTempToken() failed: %v", err)
 	}
 }
 

@@ -65,7 +65,8 @@ type IEnforcer interface {
 	CloseSafe(token string, service string) error
 
 	// Temp token api
-	CreateTempToken(style string, service string, value string, timeout int64) (string, error)
+	CreateTempToken(token string, service string, value string, timeout int64) (string, error)
+	CreateTempTokenByStyle(style string, service string, value string, timeout int64) (string, error)
 	GetTempTokenTimeout(service string, tempToken string) int64
 	ParseTempToken(service string, tempToken string) string
 	DeleteTempToken(service string, tempToken string) error

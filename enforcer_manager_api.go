@@ -208,12 +208,23 @@ func (e *Enforcer) CloseSafe(token string, service string) error {
 	return nil
 }
 
-func (e *Enforcer) CreateTempToken(style string, service string, value string, timeout int64) (string, error) {
+func (e *Enforcer) CreateTempTokenByStyle(style string, service string, value string, timeout int64) (string, error) {
 	token, err := e.generateFunc.Exec(style)
 	if err != nil {
 		return "", err
 	}
 	err = e.setTempToken(service, token, value, timeout)
+	if err != nil {
+		return "", err
+	}
+	return token, nil
+}
+
+func (e *Enforcer) CreateTempToken(token string, service string, value string, timeout int64) (string, error) {
+	if token == "" {
+		return "", fmt.Errorf("token must not be empty")
+	}
+	err := e.setTempToken(service, token, value, timeout)
 	if err != nil {
 		return "", err
 	}
