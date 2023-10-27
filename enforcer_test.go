@@ -189,6 +189,10 @@ func TestEnforcer_Login(t *testing.T) {
 	if !login {
 		t.Errorf("IsLoginById() failed: IsLoginById() = %v", login)
 	}
+	err = enforcer.Replaced("1")
+	if err != nil {
+		t.Errorf("Replaced() failed: %v", err)
+	}
 	err = enforcer.Replaced("1", loginModel.Device)
 	if err != nil {
 		t.Errorf("Replaced() failed: %v", err)
@@ -363,6 +367,46 @@ func TestEnforcer_ConcurrentNotShareMultiLogin(t *testing.T) {
 		t.Errorf("Login() failed: unexpected session.TokenSignList length = %v", session.TokenSignSize())
 	}
 
+}
+
+func TestEnforcer_ConcurrentNotShareMultiDeviceLogin(t *testing.T) {
+	var err error
+	err, enforcer, _ := NewTestConcurrentEnforcer(t)
+	t.Logf("concurrent: %v, share: %v", enforcer.config.IsConcurrent, enforcer.config.IsShare)
+	if err != nil {
+		t.Errorf("InitWithConfig() failed: %v", err)
+	}
+
+	for i := 0; i < 14; i++ {
+		_, err = enforcer.LoginById("id", fmt.Sprintf("device%v", i))
+		if err != nil {
+			t.Errorf("Login() failed: %v", err)
+		}
+	}
+	session := enforcer.GetSession("id")
+	if session.TokenSignSize() != 12 {
+		t.Errorf("Login() failed: unexpected session.TokenSignList length = %v", session.TokenSignSize())
+	}
+	b, err := enforcer.IsLoginById("id")
+	if err != nil {
+		t.Log(err)
+	}
+	if b == false {
+		t.Errorf("IsLoginById = %v, want is true", false)
+	}
+	b, err = enforcer.IsLoginById("id", "device0")
+	if err != nil {
+		t.Log(err)
+	}
+	if b == true {
+		t.Errorf("IsLoginById = %v, want is false", true)
+	}
+	if count := enforcer.GetLoginCount("id"); count != 12 {
+		t.Errorf("Login() failed: unexpected login count = %v", count)
+	}
+	if count := enforcer.GetLoginCount("id", "device1"); count != 0 {
+		t.Errorf("Login() failed: unexpected login count = %v", count)
+	}
 }
 
 func TestNewDefaultEnforcer(t *testing.T) {

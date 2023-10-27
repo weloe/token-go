@@ -183,10 +183,13 @@ func (e *Enforcer) IsLogEnable() bool {
 
 // Login login by id and default loginModel, return tokenValue and error
 func (e *Enforcer) Login(id string, ctx ctx.Context) (string, error) {
-	return e.LoginByModel(id, model.DefaultLoginModel(), ctx)
+	return e.LoginByModel(id, model.CreateLoginModelByDevice(""), ctx)
 }
 
-func (e *Enforcer) LoginById(id string) (string, error) {
+func (e *Enforcer) LoginById(id string, device ...string) (string, error) {
+	if len(device) > 0 && device[0] != "" {
+		return e.LoginByModel(id, model.CreateLoginModelByDevice(device[0]), nil)
+	}
 	return e.Login(id, nil)
 }
 
@@ -256,38 +259,37 @@ func (e *Enforcer) LoginByModel(id string, loginModel *model.Login, ctx ctx.Cont
 		if session = e.GetSession(id); session != nil {
 			// get by login device
 			tokenSignList := session.GetFilterTokenSign(device)
-			if tokenSignList.Len() <= int(tokenConfig.DeviceMaxLoginCount) {
-				return tokenValue, nil
-			}
-			//  if loginCount > maxLoginCount, logout account until single device Login count is equal to DeviceMaxLoginCount
-			for element := tokenSignList.Front(); element != nil; element = element.Next() {
-				if tokenSign, ok := element.Value.(*model.TokenSign); ok {
-					if session.TokenSignSize() > int(tokenConfig.DeviceMaxLoginCount) {
-						// delete tokenSign
-						tokenSignValue := tokenSign.Value
-						session.RemoveTokenSign(tokenSignValue)
-						err = e.UpdateSession(id, session)
-						if err != nil {
-							return "", err
-						}
-						// delete token-id
-						err = e.deleteIdByToken(tokenSignValue)
-						if err != nil {
-							return "", err
-						}
-						e.logger.Logout(e.loginType, id, tokenSignValue)
+			if tokenSignList.Len() > int(tokenConfig.DeviceMaxLoginCount) {
+				//  if loginCount > maxLoginCount, logout account until single device Login count is equal to DeviceMaxLoginCount
+				for element := tokenSignList.Front(); element != nil; element = element.Next() {
+					if tokenSign, ok := element.Value.(*model.TokenSign); ok {
+						if session.TokenSignSize() > int(tokenConfig.DeviceMaxLoginCount) {
+							// delete tokenSign
+							tokenSignValue := tokenSign.Value
+							session.RemoveTokenSign(tokenSignValue)
+							err = e.UpdateSession(id, session)
+							if err != nil {
+								return "", err
+							}
+							// delete token-id
+							err = e.deleteIdByToken(tokenSignValue)
+							if err != nil {
+								return "", err
+							}
+							e.logger.Logout(e.loginType, id, tokenSignValue)
 
-						if e.watcher != nil {
-							e.watcher.Logout(e.loginType, id, tokenSignValue)
+							if e.watcher != nil {
+								e.watcher.Logout(e.loginType, id, tokenSignValue)
+							}
 						}
 					}
 				}
-			}
-			// check TokenSignList length, if length == 0, delete this session
-			if session != nil && session.TokenSignSize() == 0 {
-				err = e.DeleteSession(id)
-				if err != nil {
-					return "", err
+				// check TokenSignList length, if length == 0, delete this session
+				if session != nil && session.TokenSignSize() == 0 {
+					err = e.DeleteSession(id)
+					if err != nil {
+						return "", err
+					}
 				}
 			}
 		}
@@ -358,13 +360,20 @@ func (e *Enforcer) Logout(ctx ctx.Context) error {
 }
 
 // LogoutById force user to logout
-func (e *Enforcer) LogoutById(id string) error {
+func (e *Enforcer) LogoutById(id string, device ...string) error {
 	session := e.GetSession(id)
 	if session != nil {
 		for _, tokenSign := range session.TokenSignList {
-			err := e.LogoutByToken(tokenSign.Value)
-			if err != nil {
-				return err
+			if len(device) > 0 && device[0] != "" && tokenSign.Device == device[0] {
+				err := e.LogoutByToken(tokenSign.Value)
+				if err != nil {
+					return err
+				}
+			} else {
+				err := e.LogoutByToken(tokenSign.Value)
+				if err != nil {
+					return err
+				}
 			}
 		}
 	}
@@ -412,11 +421,16 @@ func (e *Enforcer) LogoutByToken(token string) error {
 
 // IsLoginById check if user logged in by loginId.
 // check all tokenValue and if one is validated return true
-func (e *Enforcer) IsLoginById(id string) (bool, error) {
+func (e *Enforcer) IsLoginById(id string, device ...string) (bool, error) {
 	var err error
 	session := e.GetSession(id)
 	if session != nil {
-		l := session.TokenSignList
+		var l []*model.TokenSign
+		if len(device) > 0 && device[0] != "" {
+			l = session.GetFilterTokenSignSlice(device[0])
+		} else {
+			l = session.TokenSignList
+		}
 		for _, tokenSign := range l {
 			err = e.CheckLoginByToken(tokenSign.Value)
 			if err != nil {
@@ -500,8 +514,12 @@ func (e *Enforcer) GetLoginIdByToken(token string) (string, error) {
 	return str, nil
 }
 
-func (e *Enforcer) GetLoginCount(id string) int {
+func (e *Enforcer) GetLoginCount(id string, device ...string) int {
 	if session := e.GetSession(id); session != nil {
+		if len(device) > 0 && device[0] != "" {
+			return session.GetFilterTokenSign(device[0]).Len()
+		}
+
 		return session.TokenSignSize()
 	}
 	return 0

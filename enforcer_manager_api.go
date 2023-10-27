@@ -13,7 +13,7 @@ func (e *Enforcer) Replaced(id string, device ...string) error {
 	var err error
 	if session := e.GetSession(id); session != nil {
 		var tokenSignList *list.List
-		if len(device) == 0 {
+		if len(device) == 0 || device[0] == "" {
 			tokenSignList = session.GetTokenSignListCopy()
 		} else {
 			// get by login device
@@ -52,7 +52,7 @@ func (e *Enforcer) Kickout(id string, device ...string) error {
 	session := e.GetSession(id)
 	if session != nil {
 		var tokenSignList *list.List
-		if len(device) == 0 {
+		if len(device) == 0 || device[0] == "" {
 			tokenSignList = session.GetTokenSignListCopy()
 		} else {
 			// get by login device

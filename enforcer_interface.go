@@ -26,16 +26,16 @@ type IEnforcer interface {
 
 	// Login login api
 	Login(id string, ctx ctx.Context) (string, error)
-	LoginById(id string) (string, error)
+	LoginById(id string, device ...string) (string, error)
 	LoginByModel(id string, loginModel *model.Login, ctx ctx.Context) (string, error)
 
 	Logout(ctx ctx.Context) error
-	LogoutById(id string) error
+	LogoutById(id string, device ...string) error
 	LogoutByToken(token string) error
 
 	IsLogin(ctx ctx.Context) (bool, error)
 	IsLoginByToken(token string) (bool, error)
-	IsLoginById(id string) (bool, error)
+	IsLoginById(id string, device ...string) (bool, error)
 	CheckLogin(ctx ctx.Context) error
 	CheckLoginByToken(token string) error
 
@@ -43,7 +43,7 @@ type IEnforcer interface {
 	GetLoginIdByToken(token string) (string, error)
 	GetId(ctx ctx.Context) string
 	GetIdByToken(token string) string
-	GetLoginCount(id string) int
+	GetLoginCount(id string, device ...string) int
 
 	GetLoginCounts() (int, error)
 	GetLoginTokenCounts() (int, error)

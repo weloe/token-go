@@ -47,6 +47,17 @@ func NewSession(id string, sessionType string, loginId string) *Session {
 	}
 }
 
+func (s *Session) GetFilterTokenSignSlice(device string) []*TokenSign {
+	l := make([]*TokenSign, 0)
+
+	for _, tokenSign := range s.TokenSignList {
+		if tokenSign.Device == device {
+			l = append(l, tokenSign)
+		}
+	}
+	return l
+}
+
 // GetFilterTokenSign filter by TokenSign.Device from all TokenSign
 func (s *Session) GetFilterTokenSign(device string) *list.List {
 	copyList := list.New()
@@ -111,6 +122,9 @@ func (s *Session) RemoveTokenSignByIndex(i int) {
 // GetLastTokenByDevice get TokenSign.Value by device
 func (s *Session) GetLastTokenByDevice(device string) string {
 	tokenSignList := s.GetFilterTokenSign(device)
+	if tokenSignList.Len() == 0 {
+		return ""
+	}
 	if tokenSign, ok := tokenSignList.Back().Value.(*TokenSign); ok {
 		return tokenSign.Value
 	}

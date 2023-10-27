@@ -19,3 +19,14 @@ func DefaultLoginModel() *Login {
 		IsWriteHeader:   true,
 	}
 }
+
+func CreateLoginModelByDevice(device string) *Login {
+	return &Login{
+		Device:          device,
+		IsLastingCookie: true,
+		Timeout:         60 * 60 * 24 * 30,
+		JwtData:         nil,
+		Token:           "",
+		IsWriteHeader:   true,
+	}
+}
