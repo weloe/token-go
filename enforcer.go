@@ -214,7 +214,7 @@ func (e *Enforcer) LoginByModel(id string, loginModel *model.Login, ctx ctx.Cont
 	if session = e.GetSession(id); session == nil {
 		session = model.NewSession("0", "account-session", id)
 	}
-	session.AddTokenSign(&model.TokenSign{
+	session.AddDistinctValueTokenSign(&model.TokenSign{
 		Value:  tokenValue,
 		Device: device,
 	})

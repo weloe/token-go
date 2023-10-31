@@ -440,11 +440,11 @@ func TestEnforcer_JsonAdapter(t *testing.T) {
 		t.Fatalf("NewEnforcer() failed: %v", err)
 	}
 	newSession := model.NewSession("1", "2", "3")
-	newSession.AddTokenSign(&model.TokenSign{
+	newSession.AddDistinctValueTokenSign(&model.TokenSign{
 		Value:  "2",
 		Device: "device",
 	})
-	newSession.AddTokenSign(&model.TokenSign{
+	newSession.AddDistinctValueTokenSign(&model.TokenSign{
 		Value:  "3",
 		Device: "device",
 	})

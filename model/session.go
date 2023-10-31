@@ -93,6 +93,11 @@ func (s *Session) GetTokenSign(tokenValue string) *TokenSign {
 
 // AddTokenSign add TokenSign
 func (s *Session) AddTokenSign(sign *TokenSign) {
+	s.TokenSignList = append(s.TokenSignList, sign)
+}
+
+// AddDistinctValueTokenSign check tokenValue ,then add TokenSign
+func (s *Session) AddDistinctValueTokenSign(sign *TokenSign) {
 	if s.GetTokenSign(sign.Value) != nil {
 		return
 	}
