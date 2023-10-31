@@ -45,6 +45,11 @@ type IEnforcer interface {
 	GetIdByToken(token string) string
 	GetLoginCount(id string, device ...string) int
 
+	// refresh api
+	GetRefreshToken(tokenValue string) string
+	RefreshToken(refreshToken string, refreshModel ...*model.Refresh) (*model.RefreshRes, error)
+	RefreshTokenByModel(refreshToken string, refreshModel *model.Refresh, ctx ctx.Context) (*model.RefreshRes, error)
+
 	GetLoginCounts() (int, error)
 	GetLoginTokenCounts() (int, error)
 

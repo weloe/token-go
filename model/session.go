@@ -7,6 +7,13 @@ import (
 	"time"
 )
 
+type RefreshTokenSign struct {
+	Id           string
+	Token        string
+	RefreshValue string
+	Device       string
+}
+
 type TokenSign struct {
 	Value  string
 	Device string

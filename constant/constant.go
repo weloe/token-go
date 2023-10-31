@@ -16,7 +16,8 @@ const (
 )
 
 const (
-	TokenName = "Tokengo"
+	TokenName    = "Tokengo"
+	RefreshToken = "Tokengorefresh"
 )
 
 const (

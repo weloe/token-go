@@ -95,7 +95,7 @@ func (e *Enforcer) ResponseToken(tokenValue string, loginModel *model.Login, ctx
 	}
 
 	// set token to header
-	if loginModel.IsWriteHeader {
+	if e.config.IsWriteHeader {
 		ctx.Response().SetHeader(tokenConfig.TokenName, tokenValue)
 		ctx.Response().AddHeader(constant.AccessControlExposeHeaders, tokenConfig.TokenName)
 	}
@@ -122,6 +122,73 @@ func (e *Enforcer) checkId(str string) (bool, error) {
 	return true, nil
 }
 
+func (e *Enforcer) createRefreshToken(id string, tokenValue string, loginModel *model.Login) (string, error) {
+	// create refreshToken
+	var err error
+	if loginModel.RefreshToken == "" {
+		loginModel.RefreshToken, err = e.generateFunc.Exec(e.config.TokenStyle)
+		if err != nil {
+			return "", err
+		}
+	}
+	if loginModel.RefreshTokenTimeout == 0 {
+		loginModel.RefreshTokenTimeout = e.config.RefreshTokenTimeout
+	}
+	err = e.setRefreshToken(&model.RefreshTokenSign{
+		Id:           id,
+		Token:        tokenValue,
+		RefreshValue: loginModel.RefreshToken,
+		Device:       loginModel.Device,
+	}, loginModel.RefreshTokenTimeout)
+
+	if err != nil {
+		return "", err
+	}
+	return loginModel.RefreshToken, nil
+}
+
+// responseRefreshToken set token to cookie or header
+func (e *Enforcer) responseRefreshToken(refreshTokenValue string, loginModel *model.Login, ctx ctx.Context) error {
+	if ctx == nil {
+		return nil
+	}
+	tokenConfig := e.config
+	// set token to cookie
+	if tokenConfig.IsReadCookie {
+		var cookieTimeout int64
+		if !loginModel.IsLastingCookie {
+			cookieTimeout = -1
+		} else {
+			if loginModel.RefreshTokenTimeout != 0 {
+				cookieTimeout = loginModel.RefreshTokenTimeout
+			} else {
+				cookieTimeout = tokenConfig.Timeout * 2
+			}
+			if cookieTimeout == constant.NeverExpire {
+				cookieTimeout = math.MaxInt64
+			}
+		}
+
+		if tokenConfig.CookieConfig.Path == "" {
+			tokenConfig.CookieConfig.Path = "/"
+		}
+
+		// add cookie use tokenConfig.CookieConfig
+		ctx.Response().AddCookie(tokenConfig.RefreshTokenName,
+			refreshTokenValue,
+			tokenConfig.CookieConfig.Path,
+			tokenConfig.CookieConfig.Domain,
+			cookieTimeout)
+	}
+	// set token to header
+	if tokenConfig.IsWriteHeader {
+		ctx.Response().SetHeader(tokenConfig.RefreshTokenName, refreshTokenValue)
+		ctx.Response().AddHeader(constant.AccessControlExposeHeaders, tokenConfig.RefreshTokenName)
+	}
+
+	return nil
+}
+
 func (e *Enforcer) SetIdByToken(id string, tokenValue string, timeout int64) error {
 	err := e.notifySetStr(e.spliceTokenKey(tokenValue), id, timeout)
 	return err
@@ -144,6 +211,37 @@ func (e *Enforcer) updateIdByToken(tokenValue string, id string) error {
 func (e *Enforcer) updateTokenTimeout(token string, timeout int64) error {
 	err := e.notifyUpdateTimeout(e.spliceTokenKey(token), timeout)
 	return err
+}
+
+func (e *Enforcer) deleteRefreshToken(tokenValue string) error {
+	refreshToken := e.getRefreshTokenValue(tokenValue)
+	err := e.notifyDelete(e.spliceRefreshTokenKey(tokenValue))
+	if err != nil {
+		return err
+	}
+	err = e.notifyDelete(e.spliceRefreshTokenSignKey(refreshToken))
+	return err
+}
+
+func (e *Enforcer) setRefreshToken(refreshTokenSign *model.RefreshTokenSign, timeout int64) error {
+	err := e.notifySet(e.spliceRefreshTokenSignKey(refreshTokenSign.RefreshValue), refreshTokenSign, timeout)
+	if err != nil {
+		return err
+	}
+	err = e.notifySetStr(e.spliceRefreshTokenKey(refreshTokenSign.Token), refreshTokenSign.RefreshValue, timeout)
+	return err
+}
+
+func (e *Enforcer) getRefreshTokenValue(tokenValue string) string {
+	return e.adapter.GetStr(e.spliceRefreshTokenKey(tokenValue))
+}
+
+func (e *Enforcer) getRefreshTokenSign(refreshToken string) *model.RefreshTokenSign {
+	get := e.adapter.Get(e.spliceRefreshTokenSignKey(refreshToken), util.GetType(&model.RefreshTokenSign{}))
+	if get != nil {
+		return get.(*model.RefreshTokenSign)
+	}
+	return nil
 }
 
 func (e *Enforcer) setBanned(id string, service string, level int, time int64) error {
@@ -238,9 +336,19 @@ func (e *Enforcer) getByTempToken(service string, tempToken string) string {
 	return e.adapter.GetStr(e.spliceTempTokenKey(service, tempToken))
 }
 
-// spliceSessionKey splice session-id key
+// spliceSessionKey splice id-session key
 func (e *Enforcer) spliceSessionKey(id string) string {
 	return e.config.TokenName + ":" + e.loginType + ":session:" + id
+}
+
+// spliceRefreshTokenSignKey splice refreshToken-refreshToken key
+func (e *Enforcer) spliceRefreshTokenSignKey(refreshToken string) string {
+	return e.config.TokenName + ":" + e.loginType + ":refreshSign:" + refreshToken
+}
+
+// spliceRefreshTokenKey splice token-refreshToken key
+func (e *Enforcer) spliceRefreshTokenKey(token string) string {
+	return e.config.TokenName + ":" + e.loginType + ":refresh:" + token
 }
 
 // spliceTokenKey splice token-id key

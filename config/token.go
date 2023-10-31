@@ -11,6 +11,12 @@ type TokenConfig struct {
 	TokenName   string
 
 	Timeout int64
+
+	// If you enable DoubleToken, returns double token - token and refreshToken, when token is timeout, you can use refreshToken to refreshToken to auto login.
+	DoubleToken         bool
+	RefreshTokenName    string
+	RefreshTokenTimeout int64
+
 	// If last operate time < ActivityTimeout, token expired
 	ActivityTimeout int64
 	// Data clean period
@@ -52,15 +58,46 @@ type TokenConfig struct {
 	CookieConfig *CookieConfig
 }
 
+func (t *TokenConfig) InitConfig() {
+	if t.TokenStyle == "" {
+		t.TokenStyle = "uuid"
+	}
+	if t.TokenName == "" {
+		t.TokenName = constant.TokenName
+	}
+	if t.Timeout == 0 {
+		t.Timeout = 60 * 60 * 24 * 30
+	}
+	if t.DeviceMaxLoginCount == 0 {
+		t.DeviceMaxLoginCount = 12
+	}
+	if t.DoubleToken {
+		if t.RefreshTokenName == "" {
+			t.RefreshTokenName = constant.RefreshToken
+		}
+		if t.RefreshTokenTimeout == 0 {
+			t.RefreshTokenTimeout = t.Timeout * 2
+		}
+	}
+	if t.MaxLoginCount == 0 {
+		t.MaxLoginCount = 12
+	}
+	if t.CookieConfig == nil {
+		t.CookieConfig = DefaultCookieConfig()
+	}
+
+}
+
 func DefaultTokenConfig() *TokenConfig {
 	return &TokenConfig{
 		TokenStyle:             "uuid",
 		TokenPrefix:            "",
 		TokenName:              constant.TokenName,
 		Timeout:                60 * 60 * 24 * 30,
+		DoubleToken:            false,
 		ActivityTimeout:        -1,
 		DataRefreshPeriod:      30,
-		AutoRenew:              true,
+		AutoRenew:              false,
 		IsConcurrent:           true,
 		IsShare:                true,
 		MaxLoginCount:          12,

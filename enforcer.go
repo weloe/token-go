@@ -98,6 +98,7 @@ func InitWithConfig(tokenConfig *config.TokenConfig, adapter persist.Adapter) (*
 	if tokenConfig == nil || adapter == nil {
 		return nil, errors.New("InitWithConfig() failed: parameters cannot be nil")
 	}
+	tokenConfig.InitConfig()
 	e := &Enforcer{
 		loginType:    "user",
 		config:       *tokenConfig,
@@ -119,13 +120,13 @@ func (e *Enforcer) startCleanTimer() {
 			return
 		}
 		dataRefreshPeriod := e.config.DataRefreshPeriod
-		if period := dataRefreshPeriod; period >= 0 {
-			err := defaultAdapter.StartCleanTimer(dataRefreshPeriod)
+		if period := dataRefreshPeriod; period > 0 {
+			err := defaultAdapter.StartCleanTimer(period)
 			if err != nil {
 				log2.Printf("enble adapter cleanTimer failed: %v", err)
 				return
 			}
-			e.logger.StartCleanTimer(dataRefreshPeriod)
+			e.logger.StartCleanTimer(period)
 		}
 	}
 }
@@ -219,6 +220,17 @@ func (e *Enforcer) LoginByModel(id string, loginModel *model.Login, ctx ctx.Cont
 		Device: device,
 	})
 
+	if e.config.DoubleToken {
+		refreshToken, err := e.createRefreshToken(id, tokenValue, loginModel)
+		if err != nil {
+			return "", err
+		}
+		err = e.responseRefreshToken(refreshToken, loginModel, ctx)
+		if err != nil {
+			return "", err
+		}
+	}
+
 	timeout := loginModel.Timeout
 	// reset session
 	err = e.SetSession(id, session, timeout)
@@ -245,7 +257,6 @@ func (e *Enforcer) LoginByModel(id string, loginModel *model.Login, ctx ctx.Cont
 		Timeout:         timeout,
 		JwtData:         loginModel.JwtData,
 		Token:           tokenValue,
-		IsWriteHeader:   loginModel.IsWriteHeader,
 	}
 
 	// called logger
@@ -408,6 +419,10 @@ func (e *Enforcer) LogoutByToken(token string) error {
 		if err != nil {
 			return err
 		}
+	}
+	err = e.deleteRefreshToken(token)
+	if err != nil {
+		return err
 	}
 
 	e.logger.Logout(e.loginType, id, token)
@@ -630,4 +645,54 @@ func (e *Enforcer) GetLoginTokenCounts() (int, error) {
 		return 0, err
 	}
 	return c, nil
+}
+
+func (e *Enforcer) GetRefreshToken(tokenValue string) string {
+	return e.getRefreshTokenValue(tokenValue)
+}
+
+func (e *Enforcer) RefreshToken(refreshToken string, refreshModel ...*model.Refresh) (*model.RefreshRes, error) {
+	var m *model.Refresh
+	if len(refreshModel) != 0 {
+		m = refreshModel[0]
+	} else {
+		m = model.DefaultRefresh()
+	}
+	return e.RefreshTokenByModel(refreshToken, m, nil)
+}
+
+func (e *Enforcer) RefreshTokenByModel(refreshToken string, refreshModel *model.Refresh, ctx ctx.Context) (*model.RefreshRes, error) {
+	if refreshModel == nil {
+		return nil, errors.New("arg refreshModel can not be nil")
+	}
+	if !e.config.DoubleToken {
+		return nil, fmt.Errorf("double tokens are not enabled")
+	}
+	refreshTokenSign := e.getRefreshTokenSign(refreshToken)
+	if refreshTokenSign == nil {
+		return nil, fmt.Errorf("the refresh token does not exist: %v", refreshToken)
+	}
+	err := e.deleteRefreshToken(refreshTokenSign.Token)
+	if err != nil {
+		return nil, err
+	}
+
+	login := &model.Login{
+		Device:              refreshTokenSign.Device,
+		IsLastingCookie:     refreshModel.IsLastingCookie,
+		Timeout:             refreshModel.Timeout,
+		JwtData:             refreshModel.JwtData,
+		Token:               refreshModel.Token,
+		RefreshToken:        refreshModel.RefreshToken,
+		RefreshTokenTimeout: refreshModel.RefreshTokenTimeout,
+	}
+
+	token, err := e.LoginByModel(refreshTokenSign.Id, login, ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &model.RefreshRes{
+		Token:        token,
+		RefreshToken: refreshToken,
+	}, nil
 }

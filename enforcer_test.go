@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 )
 
 func NewTestHttpContext(t *testing.T) (error, ctx.Context) {
@@ -562,5 +563,61 @@ func TestEnforcer_SecSafe(t *testing.T) {
 	isSafe = enforcer.IsSafe(tokenValue, service)
 	if isSafe {
 		t.Fatalf("IsSafe() failed, unexpected return value: %v", isSafe)
+	}
+}
+
+func TestEnforcer_RefreshToken(t *testing.T) {
+	adapter := NewDefaultAdapter()
+
+	tokenConfig := &config.TokenConfig{
+		DoubleToken: true,
+	}
+	enforcer, err := NewEnforcer(adapter, tokenConfig)
+	if err != nil {
+		t.Fatalf("NewEnforcer() failed: %v", err)
+	}
+	token, err := enforcer.Login("1", nil)
+	if err != nil {
+		t.Fatalf("Login() failed: %v", err)
+	}
+	t.Logf("login success. token: %v", token)
+	refreshToken := enforcer.GetRefreshToken(token)
+	t.Logf("get refreshToken: %v", refreshToken)
+	err = enforcer.LogoutByToken(token)
+	t.Logf("‘1’ logout")
+	if err != nil {
+		t.Fatalf("LogoutByToken() failed: %v", err)
+	}
+	if enforcer.GetRefreshToken(token) != "" {
+		t.Fatalf("GetRefreshToken() = %v, want is nil", enforcer.GetRefreshToken(token))
+	}
+	_, err = enforcer.RefreshToken(token)
+	if err == nil {
+		t.Fatalf("RefreshToken() failed: %v", err)
+	}
+	token, err = enforcer.LoginByModel("1", &model.Login{
+		Device:              "test",
+		IsLastingCookie:     false,
+		Timeout:             1,
+		Token:               "",
+		RefreshTokenTimeout: 200000,
+	}, nil)
+	if err != nil {
+		t.Fatalf("Login() failed: %v", err)
+	}
+	refreshToken = enforcer.GetRefreshToken(token)
+	time.Sleep(time.Second)
+	loginId, _ := enforcer.GetLoginIdByToken(token)
+	if loginId != "" {
+		t.Fatalf("GetLoginIdByToken() failed: %v", loginId)
+	}
+	refreshRes, err := enforcer.RefreshToken(refreshToken)
+	if err != nil {
+		t.Fatalf("RefreshToken() failed: %v", err)
+	}
+	t.Logf(refreshRes.String())
+	_, err = enforcer.RefreshToken(refreshToken)
+	if err == nil {
+		t.Fatalf("RefreshToken() failed: %v", err)
 	}
 }
