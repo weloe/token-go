@@ -33,11 +33,20 @@ func (e *Enforcer) createLoginToken(id string, loginModel *model.Login) (string,
 	if tokenConfig.IsConcurrent && tokenConfig.IsShare {
 		// reuse the previous token.
 		if v := e.GetSession(id); v != nil {
-			tokenValue = v.GetLastTokenByDevice(loginModel.Device)
-			if tokenValue != "" {
-				return tokenValue, nil
+			var tokenSignList []*model.TokenSign
+			// if device is empty, get all tokenSign
+			if loginModel.Device == "" {
+				tokenSignList = v.TokenSignList
+			} else {
+				tokenSignList = v.GetFilterTokenSignSlice(loginModel.Device)
 			}
-
+			// get the last token value
+			if len(tokenSignList) != 0 && tokenSignList[len(tokenSignList)-1] != nil {
+				tokenValue = tokenSignList[len(tokenSignList)-1].Value
+				if tokenValue != "" {
+					return tokenValue, nil
+				}
+			}
 		}
 	}
 
