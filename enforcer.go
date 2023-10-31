@@ -384,7 +384,7 @@ func (e *Enforcer) LogoutById(id string, device ...string) error {
 func (e *Enforcer) LogoutByToken(token string) error {
 	var err error
 	// delete token-id
-	id := e.GetIdByToken(token)
+	id := e.getIdByToken(token)
 	if id == "" {
 		return errors.New("user not logged in")
 	}
@@ -457,7 +457,13 @@ func (e *Enforcer) GetIdByToken(token string) string {
 	if token == "" {
 		return ""
 	}
-	return e.getIdByToken(token)
+	loginId := e.getIdByToken(token)
+	// auto refresh timeout, When the user accesses
+	if loginId != "" && e.config.AutoRenew {
+		_ = e.updateTokenTimeout(token, e.config.Timeout)
+		_ = e.UpdateSessionTimeout(loginId, e.config.Timeout)
+	}
+	return loginId
 }
 
 // IsLogin check if user logged in by token.
@@ -591,6 +597,11 @@ func (e *Enforcer) UpdateSession(id string, session *model.Session) error {
 		return err
 	}
 	return nil
+}
+
+func (e *Enforcer) UpdateSessionTimeout(id string, timeout int64) error {
+	err := e.notifyUpdateTimeout(id, timeout)
+	return err
 }
 
 func (e *Enforcer) GetTokenConfig() config.TokenConfig {

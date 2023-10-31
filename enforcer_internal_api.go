@@ -141,6 +141,11 @@ func (e *Enforcer) updateIdByToken(tokenValue string, id string) error {
 	return err
 }
 
+func (e *Enforcer) updateTokenTimeout(token string, timeout int64) error {
+	err := e.notifyUpdateTimeout(e.spliceTokenKey(token), timeout)
+	return err
+}
+
 func (e *Enforcer) setBanned(id string, service string, level int, time int64) error {
 	err := e.notifySetStr(e.spliceBannedKey(id, service), strconv.Itoa(level), time)
 	return err
