@@ -25,6 +25,10 @@ func NewDefaultAdapter() *DefaultAdapter {
 	}
 }
 
+func (d *DefaultAdapter) SetCache(cache cache.Cache) {
+	d.cache = cache
+}
+
 func (d *DefaultAdapter) SetSerializer(serializer Serializer) {
 	d.serializer = serializer
 }
