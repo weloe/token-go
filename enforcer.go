@@ -269,38 +269,11 @@ func (e *Enforcer) LoginByModel(id string, loginModel *model.Login, ctx ctx.Cont
 	if device != "" && tokenConfig.DeviceMaxLoginCount != -1 {
 		if session = e.GetSession(id); session != nil {
 			// get by login device
-			tokenSignList := session.GetFilterTokenSign(device)
-			if tokenSignList.Len() > int(tokenConfig.DeviceMaxLoginCount) {
-				//  if loginCount > maxLoginCount, logout account until single device Login count is equal to DeviceMaxLoginCount
-				for element := tokenSignList.Front(); element != nil; element = element.Next() {
-					if tokenSign, ok := element.Value.(*model.TokenSign); ok {
-						if session.TokenSignSize() > int(tokenConfig.DeviceMaxLoginCount) {
-							// delete tokenSign
-							tokenSignValue := tokenSign.Value
-							session.RemoveTokenSign(tokenSignValue)
-							err = e.UpdateSession(id, session)
-							if err != nil {
-								return "", err
-							}
-							// delete token-id
-							err = e.deleteIdByToken(tokenSignValue)
-							if err != nil {
-								return "", err
-							}
-							e.logger.Logout(e.loginType, id, tokenSignValue)
-
-							if e.watcher != nil {
-								e.watcher.Logout(e.loginType, id, tokenSignValue)
-							}
-						}
-					}
-				}
-				// check TokenSignList length, if length == 0, delete this session
-				if session != nil && session.TokenSignSize() == 0 {
-					err = e.DeleteSession(id)
-					if err != nil {
-						return "", err
-					}
+			tokenSignList := session.GetFilterTokenSignSlice(device)
+			if len(tokenSignList) > int(tokenConfig.DeviceMaxLoginCount) {
+				err = e.deleteRedundantTokenSign(session, tokenConfig.DeviceMaxLoginCount)
+				if err != nil {
+					return "", err
 				}
 			}
 		}
@@ -312,35 +285,9 @@ func (e *Enforcer) LoginByModel(id string, loginModel *model.Login, ctx ctx.Cont
 			if session.TokenSignSize() <= int(tokenConfig.MaxLoginCount) {
 				return tokenValue, nil
 			}
-			// logout account until loginCount == maxLoginCount if loginCount > maxLoginCount
-			for _, tokenSign := range session.TokenSignList {
-				if session.TokenSignSize() > int(tokenConfig.MaxLoginCount) {
-					// delete tokenSign
-					tokenSignValue := tokenSign.Value
-					session.RemoveTokenSign(tokenSignValue)
-					err = e.UpdateSession(id, session)
-					if err != nil {
-						return "", err
-					}
-					// delete token-id
-					err = e.deleteIdByToken(tokenSignValue)
-					if err != nil {
-						return "", err
-					}
-					e.logger.Logout(e.loginType, id, tokenSignValue)
-
-					if e.watcher != nil {
-						e.watcher.Logout(e.loginType, id, tokenSignValue)
-					}
-				}
-			}
-
-			// check TokenSignList length, if length == 0, delete this session
-			if session != nil && session.TokenSignSize() == 0 {
-				err = e.DeleteSession(id)
-				if err != nil {
-					return "", err
-				}
+			err = e.deleteRedundantTokenSign(session, tokenConfig.MaxLoginCount)
+			if err != nil {
+				return "", err
 			}
 		}
 	}

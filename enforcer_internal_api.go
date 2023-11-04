@@ -103,6 +103,43 @@ func (e *Enforcer) ResponseToken(tokenValue string, loginModel *model.Login, ctx
 	return nil
 }
 
+// Delete the tokens to a specified number
+func (e *Enforcer) deleteRedundantTokenSign(session *model.Session, number int16) error {
+	var err error
+	id := session.LoginId
+	// logout account until loginCount == maxLoginCount if loginCount > maxLoginCount
+	for _, tokenSign := range session.TokenSignList {
+		if session.TokenSignSize() > int(number) {
+			// delete tokenSign
+			tokenSignValue := tokenSign.Value
+			session.RemoveTokenSign(tokenSignValue)
+			err = e.UpdateSession(id, session)
+			if err != nil {
+				return err
+			}
+			// delete token-id
+			err = e.deleteIdByToken(tokenSignValue)
+			if err != nil {
+				return err
+			}
+			e.logger.Logout(e.loginType, id, tokenSignValue)
+
+			if e.watcher != nil {
+				e.watcher.Logout(e.loginType, id, tokenSignValue)
+			}
+		}
+	}
+
+	// check TokenSignList length, if length == 0, delete this session
+	if session != nil && session.TokenSignSize() == 0 {
+		err = e.DeleteSession(id)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // checkId check id
 func (e *Enforcer) checkId(str string) (bool, error) {
 	i, err := strconv.Atoi(str)
