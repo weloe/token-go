@@ -420,11 +420,6 @@ func (e *Enforcer) GetIdByToken(token string) string {
 		return ""
 	}
 	loginId := e.getIdByToken(token)
-	// auto refresh timeout, When the user accesses
-	if loginId != "" && e.config.AutoRenew {
-		_ = e.updateTokenTimeout(token, e.config.Timeout)
-		_ = e.UpdateSessionTimeout(loginId, e.config.Timeout)
-	}
 	return loginId
 }
 
@@ -478,7 +473,11 @@ func (e *Enforcer) GetLoginIdByToken(token string) (string, error) {
 	if !validate {
 		return "", err
 	}
-
+	// auto refresh timeout, When the user accesses
+	if e.config.AutoRenew {
+		_ = e.updateTokenTimeout(token, e.config.Timeout)
+		_ = e.UpdateSessionTimeout(str, e.config.Timeout)
+	}
 	return str, nil
 }
 
