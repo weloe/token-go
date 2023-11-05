@@ -642,3 +642,24 @@ func (e *Enforcer) RefreshTokenByModel(refreshToken string, refreshModel *model.
 		RefreshToken: refreshToken,
 	}, nil
 }
+
+func (e *Enforcer) GetLoginDevices(id string) []string {
+	session := e.GetSession(id)
+	if session == nil {
+		return nil
+	}
+	return session.GetAllDevice()
+}
+
+func (e *Enforcer) GetDeviceByToken(token string) string {
+	id := e.getIdByToken(token)
+	session := e.GetSession(id)
+	if session == nil {
+		return ""
+	}
+	tokenSign := session.GetTokenSign(token)
+	if tokenSign == nil {
+		return ""
+	}
+	return tokenSign.Device
+}

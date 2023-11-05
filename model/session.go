@@ -4,6 +4,7 @@ import (
 	"container/list"
 	"encoding/json"
 	"fmt"
+	"github.com/weloe/token-go/util"
 	"time"
 )
 
@@ -63,6 +64,16 @@ func (s *Session) GetFilterTokenSignSlice(device string) []*TokenSign {
 		}
 	}
 	return l
+}
+
+func (s *Session) GetAllDevice() []string {
+	arr := make([]string, 0)
+	for _, sign := range s.TokenSignList {
+		if !util.HasStr(arr, sign.Device) {
+			arr = append(arr, sign.Device)
+		}
+	}
+	return arr
 }
 
 // GetFilterTokenSign filter by TokenSign.Device from all TokenSign

@@ -621,3 +621,19 @@ func TestEnforcer_RefreshToken(t *testing.T) {
 		t.Fatalf("RefreshToken() failed: %v", err)
 	}
 }
+
+func TestEnforcer_GetLoginDevices(t *testing.T) {
+	enforcer, _ := NewTestEnforcer(t)
+	t1, err := enforcer.LoginById("1", "test")
+	if err != nil {
+		t.Fatalf("LoginById failed: %v", err)
+	}
+	devices := enforcer.GetLoginDevices("1")
+	if len(devices) != 1 || devices[0] != "test" {
+		t.Fatalf("GetLoginDevices failed, want is 'test'")
+	}
+	device := enforcer.GetDeviceByToken(t1)
+	if device != "test" {
+		t.Fatalf("GetLoginDevices failed, want is 'test'")
+	}
+}
