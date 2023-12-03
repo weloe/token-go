@@ -25,9 +25,9 @@ type IEnforcer interface {
 	GetTokenConfig() config.TokenConfig
 
 	// Login login api
-	Login(id string, ctx ctx.Context) (string, error)
+	Login(id string, ctx ...ctx.Context) (string, error)
 	LoginById(id string, device ...string) (string, error)
-	LoginByModel(id string, loginModel *model.Login, ctx ctx.Context) (string, error)
+	LoginByModel(id string, loginModel *model.Login, ctx ...ctx.Context) (string, error)
 
 	Logout(ctx ctx.Context) error
 	LogoutById(id string, device ...string) error
@@ -52,7 +52,7 @@ type IEnforcer interface {
 	// refresh api
 	GetRefreshToken(tokenValue string) string
 	RefreshToken(refreshToken string, refreshModel ...*model.Refresh) (*model.RefreshRes, error)
-	RefreshTokenByModel(refreshToken string, refreshModel *model.Refresh, ctx ctx.Context) (*model.RefreshRes, error)
+	RefreshTokenByModel(refreshToken string, refreshModel *model.Refresh, ctx ...ctx.Context) (*model.RefreshRes, error)
 
 	GetLoginCounts() (int, error)
 	GetLoginTokenCounts() (int, error)

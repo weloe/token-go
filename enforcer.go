@@ -183,21 +183,25 @@ func (e *Enforcer) IsLogEnable() bool {
 }
 
 // Login login by id and default loginModel, return tokenValue and error
-func (e *Enforcer) Login(id string, ctx ctx.Context) (string, error) {
-	return e.LoginByModel(id, model.CreateLoginModelByDevice(""), ctx)
+func (e *Enforcer) Login(id string, ctx ...ctx.Context) (string, error) {
+	return e.LoginByModel(id, model.CreateLoginModelByDevice(""), ctx...)
 }
 
 func (e *Enforcer) LoginById(id string, device ...string) (string, error) {
 	if len(device) > 0 && device[0] != "" {
 		return e.LoginByModel(id, model.CreateLoginModelByDevice(device[0]), nil)
 	}
+
 	return e.Login(id, nil)
 }
 
 // LoginByModel login by id and loginModel, return tokenValue and error
-func (e *Enforcer) LoginByModel(id string, loginModel *model.Login, ctx ctx.Context) (string, error) {
+func (e *Enforcer) LoginByModel(id string, loginModel *model.Login, c ...ctx.Context) (string, error) {
 	if loginModel == nil {
 		return "", errors.New("arg loginModel can not be nil")
+	}
+	if len(c) == 0 {
+		c = []ctx.Context{nil}
 	}
 	var err error
 	var session *model.Session
@@ -225,7 +229,7 @@ func (e *Enforcer) LoginByModel(id string, loginModel *model.Login, ctx ctx.Cont
 		if err != nil {
 			return "", err
 		}
-		err = e.responseRefreshToken(refreshToken, loginModel, ctx)
+		err = e.responseRefreshToken(refreshToken, loginModel, c[0])
 		if err != nil {
 			return "", err
 		}
@@ -245,7 +249,7 @@ func (e *Enforcer) LoginByModel(id string, loginModel *model.Login, ctx ctx.Cont
 	}
 
 	// response token
-	err = e.ResponseToken(tokenValue, loginModel, ctx)
+	err = e.ResponseToken(tokenValue, loginModel, c[0])
 	if err != nil {
 		return "", err
 	}
@@ -607,7 +611,7 @@ func (e *Enforcer) RefreshToken(refreshToken string, refreshModel ...*model.Refr
 	return e.RefreshTokenByModel(refreshToken, m, nil)
 }
 
-func (e *Enforcer) RefreshTokenByModel(refreshToken string, refreshModel *model.Refresh, ctx ctx.Context) (*model.RefreshRes, error) {
+func (e *Enforcer) RefreshTokenByModel(refreshToken string, refreshModel *model.Refresh, ctx ...ctx.Context) (*model.RefreshRes, error) {
 	if refreshModel == nil {
 		return nil, errors.New("arg refreshModel can not be nil")
 	}
@@ -633,7 +637,7 @@ func (e *Enforcer) RefreshTokenByModel(refreshToken string, refreshModel *model.
 		RefreshTokenTimeout: refreshModel.RefreshTokenTimeout,
 	}
 
-	token, err := e.LoginByModel(refreshTokenSign.Id, login, ctx)
+	token, err := e.LoginByModel(refreshTokenSign.Id, login, ctx...)
 	if err != nil {
 		return nil, err
 	}
