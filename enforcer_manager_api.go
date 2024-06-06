@@ -269,7 +269,7 @@ func (e *Enforcer) Scanned(QRCodeId string, loginId string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	tempToken, err := e.CreateTempToken(e.config.TokenStyle, "qrCode", QRCodeId, e.config.Timeout)
+	tempToken, err := e.CreateTempTokenByStyle(e.config.TokenStyle, "qrCode", QRCodeId, e.config.Timeout)
 	if err != nil {
 		return "", err
 	}
