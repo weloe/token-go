@@ -1,6 +1,9 @@
 package persist
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"github.com/weloe/token-go/util"
+)
 
 type JsonSerializer struct {
 }
@@ -10,7 +13,12 @@ func NewJsonSerializer() *JsonSerializer {
 }
 
 func (j *JsonSerializer) Serialize(data interface{}) ([]byte, error) {
-	serializedData, err := json.Marshal(data)
+	serializedData, err := util.InterfaceToBytes(data)
+	if err == nil && serializedData != nil {
+		return serializedData, nil
+	}
+
+	serializedData, err = json.Marshal(data)
 	if err != nil {
 		return nil, err
 	}
