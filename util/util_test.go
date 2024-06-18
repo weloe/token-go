@@ -20,3 +20,15 @@ func TestAppendStr(t *testing.T) {
 		}
 	}
 }
+
+func TestInterfaceToBytes(t *testing.T) {
+	_, err := InterfaceToBytes(1)
+	if err != nil {
+		t.Errorf("InterfaceToBytes() error: %v", err)
+	}
+
+	_, err = InterfaceToBytes("1")
+	if err != nil {
+		t.Errorf("InterfaceToBytes() error: %v", err)
+	}
+}

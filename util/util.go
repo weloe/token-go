@@ -28,10 +28,16 @@ func HasStr(arr []string, str string) bool {
 }
 
 func InterfaceToBytes(data interface{}) ([]byte, error) {
-	if b, ok := data.([]byte); ok {
-		return b, nil
+	switch v := data.(type) {
+	case []byte:
+		return v, nil
+	case string:
+		return []byte(v), nil
+	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
+		return []byte(fmt.Sprintf("%d", v)), nil
+	default:
+		return nil, fmt.Errorf("unable to convert %T to []byte", data)
 	}
-	return nil, fmt.Errorf("unable to convert %T to []byte", data)
 }
 
 // AppendStr do not add repeated str.
